@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class FatigueLevel3Page extends StatefulWidget {
   const FatigueLevel3Page({super.key});
@@ -13,12 +14,13 @@ class FatigueLevel3Page extends StatefulWidget {
 
 class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
   final MapController _mapController = MapController();
-  final LatLng _rrLocation = const LatLng(2.3020, 103.3245);
+  final LatLng _rrLocation = const LatLng(2.3020, 103.3245); // Target rest area preview coordinates
   
   final FlutterTts _flutterTts = FlutterTts();
   int _countdown = 7;
   Timer? _timer;
   bool _isSosTriggered = false;
+  bool _isSosCancelled = false; // Flag to check if SOS has been manually cancelled by the user
 
   @override
   void initState() {
@@ -29,27 +31,32 @@ class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
 
   Future<void> _playVoiceWarning() async {
     await _flutterTts.setLanguage("en-US");
-    await _flutterTts.setSpeechRate(0.5); // 👈 Speech rate 0.5
+    await _flutterTts.setSpeechRate(0.5);
     await _flutterTts.setPitch(1.0);
     await _flutterTts.speak("Severe fatigue detected. Navigating to nearest rest area automatically.");
   }
 
   void _startCountdown() {
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (_isSosCancelled) {
+        timer.cancel();
+        return;
+      }
       if (_countdown > 0) {
         setState(() {
           _countdown--;
         });
       } else {
         _timer?.cancel();
-        _triggerAutoSos(); // 👈 Countdown ended, trigger Auto-SOS
+        if (!_isSosCancelled) {
+          _triggerAutoSos();
+        }
       }
     });
   }
 
-  // Auto-SOS action triggered when countdown ends
   void _triggerAutoSos() {
-    if (!mounted) return;
+    if (!mounted || _isSosCancelled) return;
     setState(() {
       _isSosTriggered = true;
     });
@@ -65,6 +72,29 @@ class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
     );
   }
 
+  // Launch the specified Google Maps short link
+  Future<void> _launchGoogleMaps() async {
+    final Uri googleMapsUrl = Uri.parse(
+      'https://maps.app.goo.gl/WZ3JEwNecZWQDoZi8?g_st=aw'
+    );
+
+    try {
+      bool launched = await launchUrl(
+        googleMapsUrl,
+        mode: LaunchMode.externalApplication,
+      );
+      
+      if (!launched) {
+        throw 'Could not launch $googleMapsUrl';
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not open Google Maps: $e')),
+      );
+    }
+  }
+
   @override
   void dispose() {
     _timer?.cancel();
@@ -75,6 +105,7 @@ class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
   @override
   Widget build(BuildContext context) {
     const Color primaryRed = Color(0xFFBA1A1A);
+    const Color successGreen = Color(0xFF2E7D32); // Green color after cancellation
     const Color errorContainer = Color(0xFFFFDAD6);
     const Color onSurface = Color(0xFF111c2d);
     const Color onSurfaceVariant = Color(0xFF464555);
@@ -86,37 +117,61 @@ class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
         body: SafeArea(
           child: Column(
             children: [
-              // Top red alert bar (with countdown, displays AUTO-SOS ACTIVATED when finished)
+              // Top status alert bar: Changes to successGreen when cancelled
               Container(
                 height: 64,
-                color: primaryRed,
+                color: _isSosCancelled ? successGreen : primaryRed,
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Icon(Icons.emergency, color: Colors.white),
+                    Icon(
+                      _isSosCancelled ? Icons.check_circle : Icons.emergency, 
+                      color: Colors.white,
+                    ),
                     Text(
-                      _isSosTriggered ? '🚨 AUTO-SOS ACTIVATED' : 'AUTO-SOS IN: ${_countdown}s',
+                      _isSosCancelled 
+                          ? 'SOS CANCELLED' 
+                          : (_isSosTriggered ? '🚨 AUTO-SOS ACTIVATED' : 'AUTO-SOS IN: ${_countdown}s'),
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
                     ),
-                    ElevatedButton(
-                      onPressed: () {
-                        _timer?.cancel();
-                        _flutterTts.setSpeechRate(0.5);
-                        _flutterTts.speak("SOS cancelled.");
-                        Navigator.pop(context);
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: primaryRed,
-                        shape: const StadiumBorder(),
+                    if (!_isSosCancelled)
+                      ElevatedButton(
+                        onPressed: () {
+                          _timer?.cancel();
+                          _flutterTts.setSpeechRate(0.5);
+                          _flutterTts.speak("SOS cancelled.");
+                          
+                          // Switch state, stay on current page, do not call Navigator.pop(context)
+                          setState(() {
+                            _isSosCancelled = true;
+                            _isSosTriggered = false;
+                          });
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('🛡️ SOS has been cancelled. You remain on this page.'),
+                              backgroundColor: Colors.black87,
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: primaryRed,
+                          shape: const StadiumBorder(),
+                        ),
+                        child: const Text('CANCEL SOS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                      )
+                    else
+                      const Text(
+                        'Safe',
+                        style: TextStyle(color: Colors.white70, fontStyle: FontStyle.italic),
                       ),
-                      child: const Text('CANCEL SOS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                    ),
                   ],
                 ),
               ),
@@ -139,6 +194,7 @@ class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
               Expanded(
                 child: Stack(
                   children: [
+                    // FlutterMap (OpenStreetMap) as in-app preview
                     FlutterMap(
                       mapController: _mapController,
                       options: MapOptions(
@@ -209,7 +265,7 @@ class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(16),
-                              border: const Border(left: BorderSide(color: primaryRed, width: 6)),
+                              border: Border(left: BorderSide(color: _isSosCancelled ? successGreen : primaryRed, width: 6)),
                               boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 15)],
                             ),
                             child: Row(
@@ -229,7 +285,7 @@ class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       const Text('NEAREST REST AREA DETECTED:', style: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 10, color: onSurfaceVariant)),
-                                      const Text('Ayer Keroh R&R (Northbound)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: onSurface)),
+                                      const Text('Kulai R&R (Northbound)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: onSurface)),
                                       const SizedBox(height: 4),
                                       Row(
                                         children: const [
@@ -253,9 +309,9 @@ class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
                                 _timer?.cancel();
                                 _flutterTts.setSpeechRate(0.5);
                                 _flutterTts.speak("Navigation started.");
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Navigation started...')),
-                                );
+                                
+                                // Trigger launch of specified Google Maps short link
+                                _launchGoogleMaps();
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: primaryRed,
