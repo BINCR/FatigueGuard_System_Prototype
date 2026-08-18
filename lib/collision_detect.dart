@@ -11,7 +11,7 @@ class CollisionDetectPage extends StatefulWidget {
 
 class _CollisionDetectPageState extends State<CollisionDetectPage> {
   final FlutterTts _flutterTts = FlutterTts();
-  int _countdown = 10;
+  int _countdown = 7;
   Timer? _timer;
 
   @override
@@ -23,7 +23,7 @@ class _CollisionDetectPageState extends State<CollisionDetectPage> {
 
   Future<void> _playVoiceWarning() async {
     await _flutterTts.setLanguage("en-US");
-    await _flutterTts.setSpeechRate(0.5); //Voice speech rate set to 0.5
+    await _flutterTts.setSpeechRate(0.5); // Voice speech rate set to 0.5
     await _flutterTts.setPitch(1.0);
     await _flutterTts.speak("Collision detected! Emergency SOS initiated.");
   }
@@ -69,7 +69,7 @@ class _CollisionDetectPageState extends State<CollisionDetectPage> {
     const Color surfaceContainerHighest = Color(0xFFDEE8FF);
     const Color outlineVariant = Color(0xFFC7C4D8);
 
-    double progressValue = _countdown / 10.0;
+    double progressValue = _countdown / 7.0;
 
     return Theme(
       data: ThemeData.light(),

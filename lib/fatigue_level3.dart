@@ -14,7 +14,9 @@ class FatigueLevel3Page extends StatefulWidget {
 
 class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
   final MapController _mapController = MapController();
-  final LatLng _rrLocation = const LatLng(2.3020, 103.3245); // Target rest area preview coordinates
+  
+  // Kulai R&R accurate coordinates
+  final LatLng _rrLocation = const LatLng(1.6586, 103.6014); 
   
   final FlutterTts _flutterTts = FlutterTts();
   int _countdown = 7;
@@ -65,7 +67,7 @@ class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
     
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('🚨 AUTO-SOS TRIGGERED: Emergency services & contacts notified!'),
+        content: Text('AUTO-SOS TRIGGERED: Emergency services & contacts notified!'),
         backgroundColor: Color(0xFFBA1A1A),
         duration: Duration(seconds: 4),
       ),
@@ -132,7 +134,7 @@ class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
                     Text(
                       _isSosCancelled 
                           ? 'SOS CANCELLED' 
-                          : (_isSosTriggered ? '🚨 AUTO-SOS ACTIVATED' : 'AUTO-SOS IN: ${_countdown}s'),
+                          : (_isSosTriggered ? 'AUTO-SOS ACTIVATED' : 'AUTO-SOS IN: ${_countdown}s'),
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -194,7 +196,7 @@ class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
               Expanded(
                 child: Stack(
                   children: [
-                    // FlutterMap (OpenStreetMap) as in-app preview
+                    // FlutterMap (OpenStreetMap) as in-app preview centered at Kulai R&R
                     FlutterMap(
                       mapController: _mapController,
                       options: MapOptions(
@@ -219,40 +221,13 @@ class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
                                   border: Border.all(color: Colors.white, width: 2),
                                 ),
                                 child: const Center(
-                                  child: Icon(Icons.local_gas_station, color: Colors.white, size: 16),
+                                  child: Icon(Icons.coffee, color: Colors.white, size: 16),
                                 ),
                               ),
                             ),
                           ],
                         ),
                       ],
-                    ),
-                    Positioned(
-                      top: 16,
-                      left: 20,
-                      right: 20,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.95),
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 10)],
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.navigation, color: primaryRed, size: 32),
-                            const SizedBox(width: 12),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
-                                Text('NEXT TURN', style: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 10, color: onSurfaceVariant)),
-                                Text('300m • Exit 231', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: onSurface)),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
                     ),
                     Positioned(
                       bottom: 24,
