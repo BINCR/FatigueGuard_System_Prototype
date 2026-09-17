@@ -4,17 +4,16 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import 'collision_detect.dart';
+import 'distraction_alert.dart';
 import 'driver_analytics.dart';
 import 'driver_home.dart';
 import 'driver_profile.dart';
-import 'profile_data.dart';
-import 'services/esp32_service.dart';
-
 import 'fatigue_level1.dart';
 import 'fatigue_level2.dart';
 import 'fatigue_level3.dart';
-import 'collision_detect.dart';
-import 'distraction_alert.dart';
+import 'profile_data.dart';
+import 'services/esp32_service.dart';
 
 class DrivingIngPage extends StatefulWidget {
   const DrivingIngPage({super.key});
@@ -30,12 +29,24 @@ class _DrivingIngPageState extends State<DrivingIngPage>
   bool _isPaused = false;
 
   final Esp32Service _esp32Service = Esp32Service();
+
   StreamSubscription<DetectionResult>? _detectionSubscription;
   StreamSubscription<bool>? _connectionSubscription;
 
   String _currentLabel = 'waiting';
   double _currentConfidence = 0.0;
   bool _esp32Connected = false;
+
+  bool _alertPageOpen = false;
+  int _fatigueAlertLevel = 0;
+  DateTime? _lastAlertClosedAt;
+
+  // Hardware arrives later, so keep this true for mock testing.
+  // Change to false when connecting the real ESP32.
+  static const bool _useMockData = true;
+
+  static const double _minimumAlertConfidence = 0.80;
+  static const Duration _alertCooldown = Duration(seconds: 8);
 
   static const Color primaryColor = Color(0xFF3525CD);
   static const Color primaryContainer = Color(0xFF4F46E5);
@@ -66,10 +77,7 @@ class _DrivingIngPageState extends State<DrivingIngPage>
         _currentConfidence = result.confidence;
       });
 
-      debugPrint(
-        'Detection: ${result.label} '
-        '(${(result.confidence * 100).toStringAsFixed(0)}%)',
-      );
+      unawaited(_handleDetectionResult(result));
     });
 
     _connectionSubscription =
@@ -79,12 +87,9 @@ class _DrivingIngPageState extends State<DrivingIngPage>
       setState(() {
         _esp32Connected = connected;
       });
-
-      debugPrint('ESP32 connected: $connected');
     });
 
-    // Hardware还没到，暂时使用模拟数据。
-    _esp32Service.start(mockMode: true);
+    _esp32Service.start(mockMode: _useMockData);
   }
 
   @override
@@ -137,6 +142,74 @@ class _DrivingIngPageState extends State<DrivingIngPage>
         duration: const Duration(seconds: 1),
       ),
     );
+  }
+
+  Future<void> _handleDetectionResult(DetectionResult result) async {
+    if (!mounted || _isPaused || _alertPageOpen) {
+      return;
+    }
+
+    if (result.confidence < _minimumAlertConfidence) {
+      return;
+    }
+
+    final DateTime now = DateTime.now();
+
+    if (_lastAlertClosedAt != null &&
+        now.difference(_lastAlertClosedAt!) < _alertCooldown) {
+      return;
+    }
+
+    Widget? alertPage;
+
+    switch (result.label) {
+      case 'eyes_closed':
+      case 'yawning':
+        _fatigueAlertLevel = (_fatigueAlertLevel % 3) + 1;
+
+        switch (_fatigueAlertLevel) {
+          case 1:
+            alertPage = const FatigueLevel1Page();
+            break;
+
+          case 2:
+            alertPage = const FatigueLevel2Page();
+            break;
+
+          case 3:
+            alertPage = const FatigueLevel3Page();
+            break;
+
+          default:
+            return;
+        }
+
+        break;
+
+      case 'distracted':
+        alertPage = const DistractionAlertPage();
+        break;
+
+      case 'normal':
+      case 'uncertain':
+      default:
+        return;
+    }
+
+    _alertPageOpen = true;
+
+    try {
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => alertPage!,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        _alertPageOpen = false;
+        _lastAlertClosedAt = DateTime.now();
+      }
+    }
   }
 
   void _showDrivingDemoDialog(BuildContext context) {
@@ -342,7 +415,7 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                               _isPaused
                                   ? 'SESSION PAUSED'
                                   : _esp32Connected
-                                      ? 'MOCK: '
+                                      ? '${_useMockData ? 'MOCK' : 'ESP32'}: '
                                           '${_currentLabel.toUpperCase()} '
                                           '${(_currentConfidence * 100).toStringAsFixed(0)}%'
                                       : 'ESP32 DISCONNECTED',
@@ -381,7 +454,9 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                       children: [
                         CustomPaint(
                           size: const Size(220, 220),
-                          painter: _AlertnessRingPainter(progress: 0.94),
+                          painter: _AlertnessRingPainter(
+                            progress: 0.94,
+                          ),
                         ),
                         Container(
                           width: 170,
@@ -390,13 +465,11 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                             color: surfaceContainerLowest,
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color:
-                                  outlineVariant.withValues(alpha: 0.3),
+                              color: outlineVariant.withValues(alpha: 0.3),
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color:
-                                    Colors.black.withValues(alpha: 0.04),
+                                color: Colors.black.withValues(alpha: 0.04),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),
@@ -456,8 +529,7 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                           color: surfaceContainerLow,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color:
-                                outlineVariant.withValues(alpha: 0.4),
+                            color: outlineVariant.withValues(alpha: 0.4),
                           ),
                         ),
                         child: Column(
@@ -478,11 +550,8 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: primaryColor.withValues(
-                                      alpha: 0.1,
-                                    ),
-                                    borderRadius:
-                                        BorderRadius.circular(9999),
+                                    color: primaryColor.withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(9999),
                                   ),
                                   child: const Text(
                                     'LIVE',
@@ -540,8 +609,7 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                           color: surfaceContainerLow,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color:
-                                outlineVariant.withValues(alpha: 0.4),
+                            color: outlineVariant.withValues(alpha: 0.4),
                           ),
                         ),
                         child: Column(
@@ -659,8 +727,7 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                         width: 80,
                         height: 8,
                         decoration: BoxDecoration(
-                          color:
-                              outlineVariant.withValues(alpha: 0.4),
+                          color: outlineVariant.withValues(alpha: 0.4),
                           borderRadius: BorderRadius.circular(9999),
                         ),
                         child: Align(
@@ -669,8 +736,7 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                             width: 0,
                             decoration: BoxDecoration(
                               color: primaryColor,
-                              borderRadius:
-                                  BorderRadius.circular(9999),
+                              borderRadius: BorderRadius.circular(9999),
                             ),
                           ),
                         ),
@@ -788,7 +854,10 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.stop_circle, size: 22),
+                      Icon(
+                        Icons.stop_circle,
+                        size: 22,
+                      ),
                       SizedBox(width: 8),
                       Text(
                         'END SESSION',
@@ -944,14 +1013,14 @@ class _AlertnessRingPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final center = Offset(
+    final Offset center = Offset(
       size.width / 2,
       size.height / 2,
     );
 
-    final radius = (size.width - 16) / 2;
+    final double radius = (size.width - 16) / 2;
 
-    final trackPaint = Paint()
+    final Paint trackPaint = Paint()
       ..color = const Color(0xFFDEE8FF)
       ..strokeWidth = 14
       ..style = PaintingStyle.stroke;
@@ -962,14 +1031,14 @@ class _AlertnessRingPainter extends CustomPainter {
       trackPaint,
     );
 
-    final progressPaint = Paint()
+    final Paint progressPaint = Paint()
       ..color = const Color(0xFF3525CD)
       ..strokeWidth = 14
       ..strokeCap = StrokeCap.round
       ..style = PaintingStyle.stroke;
 
-    const startAngle = -math.pi / 2;
-    final sweepAngle = 2 * math.pi * progress;
+    const double startAngle = -math.pi / 2;
+    final double sweepAngle = 2 * math.pi * progress;
 
     canvas.drawArc(
       Rect.fromCircle(
