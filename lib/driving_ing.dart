@@ -1,13 +1,15 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+
 import 'driver_analytics.dart';
 import 'driver_home.dart';
 import 'driver_profile.dart';
-import 'profile_data.dart'; // Import global avatar state
+import 'profile_data.dart';
+import 'services/esp32_service.dart';
 
-// Import corresponding warning and rescue pages
 import 'fatigue_level1.dart';
 import 'fatigue_level2.dart';
 import 'fatigue_level3.dart';
@@ -27,6 +29,14 @@ class _DrivingIngPageState extends State<DrivingIngPage>
   Timer? _timer;
   bool _isPaused = false;
 
+  final Esp32Service _esp32Service = Esp32Service();
+  StreamSubscription<DetectionResult>? _detectionSubscription;
+  StreamSubscription<bool>? _connectionSubscription;
+
+  String _currentLabel = 'waiting';
+  double _currentConfidence = 0.0;
+  bool _esp32Connected = false;
+
   static const Color primaryColor = Color(0xFF3525CD);
   static const Color primaryContainer = Color(0xFF4F46E5);
   static const Color onPrimaryContainer = Color(0xFFDAD7FF);
@@ -44,19 +54,54 @@ class _DrivingIngPageState extends State<DrivingIngPage>
   @override
   void initState() {
     super.initState();
+
     profileData.addListener(_onProfileChanged);
     _startTimer();
+
+    _detectionSubscription = _esp32Service.results.listen((result) {
+      if (!mounted) return;
+
+      setState(() {
+        _currentLabel = result.label;
+        _currentConfidence = result.confidence;
+      });
+
+      debugPrint(
+        'Detection: ${result.label} '
+        '(${(result.confidence * 100).toStringAsFixed(0)}%)',
+      );
+    });
+
+    _connectionSubscription =
+        _esp32Service.connectionStatus.listen((connected) {
+      if (!mounted) return;
+
+      setState(() {
+        _esp32Connected = connected;
+      });
+
+      debugPrint('ESP32 connected: $connected');
+    });
+
+    // Hardware还没到，暂时使用模拟数据。
+    _esp32Service.start(mockMode: true);
   }
 
   @override
   void dispose() {
     profileData.removeListener(_onProfileChanged);
     _timer?.cancel();
+    _detectionSubscription?.cancel();
+    _connectionSubscription?.cancel();
+    _esp32Service.dispose();
+
     super.dispose();
   }
 
   void _onProfileChanged() {
-    if (mounted) setState(() {});
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void _startTimer() {
@@ -73,16 +118,22 @@ class _DrivingIngPageState extends State<DrivingIngPage>
     final int hours = totalSeconds ~/ 3600;
     final int minutes = (totalSeconds % 3600) ~/ 60;
     final int seconds = totalSeconds % 60;
-    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+
+    return '${hours.toString().padLeft(2, '0')}:'
+        '${minutes.toString().padLeft(2, '0')}:'
+        '${seconds.toString().padLeft(2, '0')}';
   }
 
   void _togglePause() {
     setState(() {
       _isPaused = !_isPaused;
     });
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(_isPaused ? 'Session paused' : 'Session resumed'),
+        content: Text(
+          _isPaused ? 'Session paused' : 'Session resumed',
+        ),
         duration: const Duration(seconds: 1),
       ),
     );
@@ -94,58 +145,95 @@ class _DrivingIngPageState extends State<DrivingIngPage>
       builder: (context) {
         return AlertDialog(
           title: const Text('Driving Alert Demo Mode'),
-          content: const Text('Select an alert level to showcase to your lecturer:'),
+          content: const Text(
+            'Select an alert level to showcase to your lecturer:',
+          ),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
+
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const FatigueLevel1Page()),
+                  MaterialPageRoute(
+                    builder: (context) => const FatigueLevel1Page(),
+                  ),
                 );
               },
-              child: const Text('1. Level 1 (Mild Fatigue)', style: TextStyle(color: Colors.amber)),
+              child: const Text(
+                '1. Level 1 (Mild Fatigue)',
+                style: TextStyle(color: Colors.amber),
+              ),
             ),
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
+
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const FatigueLevel2Page()),
+                  MaterialPageRoute(
+                    builder: (context) => const FatigueLevel2Page(),
+                  ),
                 );
               },
-              child: const Text('2. Level 2 (Critical Warning)', style: TextStyle(color: Colors.red)),
+              child: const Text(
+                '2. Level 2 (Critical Warning)',
+                style: TextStyle(color: Colors.red),
+              ),
             ),
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
+
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const FatigueLevel3Page()),
+                  MaterialPageRoute(
+                    builder: (context) => const FatigueLevel3Page(),
+                  ),
                 );
               },
-              child: const Text('3. Level 3 (R&R Navigation)', style: TextStyle(color: Colors.indigo)),
+              child: const Text(
+                '3. Level 3 (R&R Navigation)',
+                style: TextStyle(color: Colors.indigo),
+              ),
             ),
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
+
                 Navigator.push(
                   context,
-                  // Correction: Use correct class name CollisionDetectPage
-                  MaterialPageRoute(builder: (context) => const CollisionDetectPage()),
+                  MaterialPageRoute(
+                    builder: (context) => const CollisionDetectPage(),
+                  ),
                 );
               },
-              child: const Text('4. Collision Detected (SOS)', style: TextStyle(color: errorColor, fontWeight: FontWeight.bold)),
+              child: const Text(
+                '4. Collision Detected (SOS)',
+                style: TextStyle(
+                  color: errorColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
             TextButton(
               onPressed: () {
                 Navigator.pop(context);
+
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const DistractionAlertPage()),
+                  MaterialPageRoute(
+                    builder: (context) => const DistractionAlertPage(),
+                  ),
                 );
               },
-              child: const Text('5. Distraction Alert (Phone/Head)', style: TextStyle(color: Color(0xFFD96B43), fontWeight: FontWeight.bold)),
+              child: const Text(
+                '5. Distraction Alert (Phone/Head)',
+                style: TextStyle(
+                  color: Color(0xFFD96B43),
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ],
         );
@@ -172,20 +260,26 @@ class _DrivingIngPageState extends State<DrivingIngPage>
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.bug_report, color: Colors.amber, size: 26),
+            icon: const Icon(
+              Icons.bug_report,
+              color: Colors.amber,
+              size: 26,
+            ),
             tooltip: 'Demo Alert Triggers',
             onPressed: () => _showDrivingDemoDialog(context),
           ),
           const SizedBox(width: 4),
           Padding(
-            padding: const EdgeInsets.only(right: 16.0),
+            padding: const EdgeInsets.only(right: 16),
             child: Container(
               width: 40,
               height: 40,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: surfaceContainerHigh,
-                border: Border.all(color: outlineVariant.withValues(alpha: 0.5)),
+                border: Border.all(
+                  color: outlineVariant.withValues(alpha: 0.5),
+                ),
               ),
               child: ClipOval(
                 child: profileData.avatarFile != null
@@ -195,7 +289,11 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                         width: 40,
                         height: 40,
                       )
-                    : const Icon(Icons.person, color: secondaryColor, size: 24),
+                    : const Icon(
+                        Icons.person,
+                        color: secondaryColor,
+                        size: 24,
+                      ),
               ),
             ),
           ),
@@ -213,11 +311,16 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                   child: Column(
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: surfaceContainerLow,
                           borderRadius: BorderRadius.circular(9999),
-                          border: Border.all(color: outlineVariant.withValues(alpha: 0.5)),
+                          border: Border.all(
+                            color: outlineVariant.withValues(alpha: 0.5),
+                          ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -226,18 +329,28 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                               width: 10,
                               height: 10,
                               decoration: BoxDecoration(
-                                color: _isPaused ? Colors.amber : errorColor,
+                                color: !_esp32Connected
+                                    ? Colors.grey
+                                    : (_isPaused
+                                        ? Colors.amber
+                                        : Colors.green),
                                 shape: BoxShape.circle,
                               ),
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              _isPaused ? 'SESSION PAUSED' : 'SESSION IN PROGRESS',
+                              _isPaused
+                                  ? 'SESSION PAUSED'
+                                  : _esp32Connected
+                                      ? 'MOCK: '
+                                          '${_currentLabel.toUpperCase()} '
+                                          '${(_currentConfidence * 100).toStringAsFixed(0)}%'
+                                      : 'ESP32 DISCONNECTED',
                               style: const TextStyle(
                                 fontFamily: 'JetBrains Mono',
                                 fontSize: 11,
                                 fontWeight: FontWeight.w600,
-                                letterSpacing: 1.0,
+                                letterSpacing: 1,
                                 color: onSurfaceVariant,
                               ),
                             ),
@@ -252,7 +365,7 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                           fontSize: 44,
                           fontWeight: FontWeight.w800,
                           color: onSurface,
-                          letterSpacing: -1.0,
+                          letterSpacing: -1,
                         ),
                       ),
                     ],
@@ -276,10 +389,14 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                           decoration: BoxDecoration(
                             color: surfaceContainerLowest,
                             shape: BoxShape.circle,
-                            border: Border.all(color: outlineVariant.withValues(alpha: 0.3)),
+                            border: Border.all(
+                              color:
+                                  outlineVariant.withValues(alpha: 0.3),
+                            ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.04),
+                                color:
+                                    Colors.black.withValues(alpha: 0.04),
                                 blurRadius: 10,
                                 offset: const Offset(0, 4),
                               ),
@@ -308,7 +425,7 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                                   fontSize: 32,
                                   fontWeight: FontWeight.w800,
                                   color: primaryColor,
-                                  height: 1.0,
+                                  height: 1,
                                 ),
                               ),
                               const SizedBox(height: 2),
@@ -338,20 +455,34 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                         decoration: BoxDecoration(
                           color: surfaceContainerLow,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: outlineVariant.withValues(alpha: 0.4)),
+                          border: Border.all(
+                            color:
+                                outlineVariant.withValues(alpha: 0.4),
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
                               children: [
-                                const Icon(Icons.remove_red_eye_outlined, color: secondaryColor, size: 20),
+                                const Icon(
+                                  Icons.remove_red_eye_outlined,
+                                  color: secondaryColor,
+                                  size: 20,
+                                ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: primaryColor.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(9999),
+                                    color: primaryColor.withValues(
+                                      alpha: 0.1,
+                                    ),
+                                    borderRadius:
+                                        BorderRadius.circular(9999),
                                   ),
                                   child: const Text(
                                     'LIVE',
@@ -408,15 +539,23 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                         decoration: BoxDecoration(
                           color: surfaceContainerLow,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: outlineVariant.withValues(alpha: 0.4)),
+                          border: Border.all(
+                            color:
+                                outlineVariant.withValues(alpha: 0.4),
+                          ),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              mainAxisAlignment:
+                                  MainAxisAlignment.spaceBetween,
                               children: [
-                                const Icon(Icons.height, color: secondaryColor, size: 20),
+                                const Icon(
+                                  Icons.height,
+                                  color: secondaryColor,
+                                  size: 20,
+                                ),
                                 Container(
                                   width: 8,
                                   height: 8,
@@ -459,7 +598,9 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                   decoration: BoxDecoration(
                     color: surfaceContainerLow,
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: outlineVariant.withValues(alpha: 0.4)),
+                    border: Border.all(
+                      color: outlineVariant.withValues(alpha: 0.4),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -470,7 +611,10 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                           color: surfaceContainerHigh,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.warning_amber_rounded, color: onSurfaceVariant),
+                        child: const Icon(
+                          Icons.warning_amber_rounded,
+                          color: onSurfaceVariant,
+                        ),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -515,7 +659,8 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                         width: 80,
                         height: 8,
                         decoration: BoxDecoration(
-                          color: outlineVariant.withValues(alpha: 0.4),
+                          color:
+                              outlineVariant.withValues(alpha: 0.4),
                           borderRadius: BorderRadius.circular(9999),
                         ),
                         child: Align(
@@ -524,7 +669,8 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                             width: 0,
                             decoration: BoxDecoration(
                               color: primaryColor,
-                              borderRadius: BorderRadius.circular(9999),
+                              borderRadius:
+                                  BorderRadius.circular(9999),
                             ),
                           ),
                         ),
@@ -538,11 +684,17 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                   decoration: BoxDecoration(
                     color: const Color(0xFFE8F5E9),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFA5D6A7)),
+                    border: Border.all(
+                      color: const Color(0xFFA5D6A7),
+                    ),
                   ),
                   child: const Row(
                     children: [
-                      Icon(Icons.check_circle, color: Color(0xFF4CAF50), size: 32),
+                      Icon(
+                        Icons.check_circle,
+                        color: Color(0xFF4CAF50),
+                        size: 32,
+                      ),
                       SizedBox(width: 14),
                       Expanded(
                         child: Column(
@@ -578,7 +730,10 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                   style: ElevatedButton.styleFrom(
                     backgroundColor: surfaceContainerHigh,
                     foregroundColor: onSurfaceVariant,
-                    minimumSize: const Size(double.infinity, 56),
+                    minimumSize: const Size(
+                      double.infinity,
+                      56,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -587,10 +742,17 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(_isPaused ? Icons.play_circle : Icons.pause_circle, size: 22),
+                      Icon(
+                        _isPaused
+                            ? Icons.play_circle
+                            : Icons.pause_circle,
+                        size: 22,
+                      ),
                       const SizedBox(width: 8),
                       Text(
-                        _isPaused ? 'RESUME SESSION' : 'PAUSE SESSION',
+                        _isPaused
+                            ? 'RESUME SESSION'
+                            : 'PAUSE SESSION',
                         style: const TextStyle(
                           fontFamily: 'Manrope',
                           fontSize: 15,
@@ -605,13 +767,19 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                   onPressed: () {
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (context) => const DriverHomePage()),
+                      MaterialPageRoute(
+                        builder: (context) =>
+                            const DriverHomePage(),
+                      ),
                     );
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: errorColor,
                     foregroundColor: Colors.white,
-                    minimumSize: const Size(double.infinity, 56),
+                    minimumSize: const Size(
+                      double.infinity,
+                      56,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -639,10 +807,15 @@ class _DrivingIngPageState extends State<DrivingIngPage>
         ),
       ),
       bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 10,
+        ),
         decoration: BoxDecoration(
           color: surfaceColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          borderRadius: const BorderRadius.vertical(
+            top: Radius.circular(20),
+          ),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -655,14 +828,21 @@ class _DrivingIngPageState extends State<DrivingIngPage>
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 8,
+              ),
               decoration: BoxDecoration(
                 color: primaryContainer,
                 borderRadius: BorderRadius.circular(9999),
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.visibility, color: onPrimaryContainer, size: 18),
+                  Icon(
+                    Icons.visibility,
+                    color: onPrimaryContainer,
+                    size: 18,
+                  ),
                   SizedBox(width: 6),
                   Text(
                     'Monitoring',
@@ -680,14 +860,24 @@ class _DrivingIngPageState extends State<DrivingIngPage>
               onTap: () {
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => const DriverAnalyticsPage()),
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        const DriverAnalyticsPage(),
+                  ),
                 );
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: const Row(
                   children: [
-                    Icon(Icons.leaderboard, color: onSurfaceVariant, size: 18),
+                    Icon(
+                      Icons.leaderboard,
+                      color: onSurfaceVariant,
+                      size: 18,
+                    ),
                     SizedBox(width: 6),
                     Text(
                       'Analytics',
@@ -706,14 +896,24 @@ class _DrivingIngPageState extends State<DrivingIngPage>
               onTap: () {
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => const DriverProfilePage()),
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        const DriverProfilePage(),
+                  ),
                 );
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: const Row(
                   children: [
-                    Icon(Icons.person, color: onSurfaceVariant, size: 18),
+                    Icon(
+                      Icons.person,
+                      color: onSurfaceVariant,
+                      size: 18,
+                    ),
                     SizedBox(width: 6),
                     Text(
                       'Profile',
@@ -736,19 +936,31 @@ class _DrivingIngPageState extends State<DrivingIngPage>
 }
 
 class _AlertnessRingPainter extends CustomPainter {
+  _AlertnessRingPainter({
+    required this.progress,
+  });
+
   final double progress;
-  _AlertnessRingPainter({required this.progress});
 
   @override
   void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
+    final center = Offset(
+      size.width / 2,
+      size.height / 2,
+    );
+
     final radius = (size.width - 16) / 2;
 
     final trackPaint = Paint()
       ..color = const Color(0xFFDEE8FF)
       ..strokeWidth = 14
       ..style = PaintingStyle.stroke;
-    canvas.drawCircle(center, radius, trackPaint);
+
+    canvas.drawCircle(
+      center,
+      radius,
+      trackPaint,
+    );
 
     final progressPaint = Paint()
       ..color = const Color(0xFF3525CD)
@@ -758,8 +970,12 @@ class _AlertnessRingPainter extends CustomPainter {
 
     const startAngle = -math.pi / 2;
     final sweepAngle = 2 * math.pi * progress;
+
     canvas.drawArc(
-      Rect.fromCircle(center: center, radius: radius),
+      Rect.fromCircle(
+        center: center,
+        radius: radius,
+      ),
       startAngle,
       sweepAngle,
       false,
@@ -768,7 +984,9 @@ class _AlertnessRingPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _AlertnessRingPainter oldDelegate) {
+  bool shouldRepaint(
+    covariant _AlertnessRingPainter oldDelegate,
+  ) {
     return oldDelegate.progress != progress;
   }
 }

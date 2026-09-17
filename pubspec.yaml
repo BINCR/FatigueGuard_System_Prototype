@@ -17,6 +17,7 @@ dependencies:
   flutter_tts: ^4.2.2  # Voice text-to-speech plugin for voice warning announcements
   image_picker: ^1.1.2  # Used for selecting images from phone gallery
   url_launcher: ^6.2.5 # Used for launching external URLs (Google Maps for navigation)
+  http: ^1.6.0
 
 dev_dependencies:
   flutter_test:
