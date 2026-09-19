@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'driver_home.dart';
 import 'driver_profile.dart';
 import 'profile_data.dart'; // Import global avatar state
+import 'services/storage_service.dart';
 
 class AnalyticsNotificationItem {
   final String title;
@@ -36,6 +37,23 @@ class _DriverAnalyticsPageState extends State<DriverAnalyticsPage>
     with SingleTickerProviderStateMixin {
   late AnimationController _gaugeController;
   late Animation<double> _gaugeAnimation;
+  List<Map<String, dynamic>> _sessions = <Map<String, dynamic>>[];
+  List<Map<String, dynamic>> _events = <Map<String, dynamic>>[];
+
+  int get _totalEvents => _events.length;
+
+  int get _totalDriveSeconds => _sessions.fold<int>(
+        0,
+        (total, session) =>
+            total + ((session['durationSeconds'] as num?)?.toInt() ?? 0),
+      );
+
+  double get _safetyScore {
+    if (_sessions.isEmpty) return 1.0;
+    final double penalty =
+        (_totalEvents / (_sessions.length * 5)).clamp(0, 1).toDouble();
+    return (1 - (penalty * 0.5)).clamp(0.5, 1.0).toDouble();
+  }
 
   final List<AnalyticsNotificationItem> _notifications = [
     AnalyticsNotificationItem(
@@ -79,11 +97,13 @@ class _DriverAnalyticsPageState extends State<DriverAnalyticsPage>
   void initState() {
     super.initState();
     profileData.addListener(_onProfileChanged);
+    _sessions = StorageService.instance.getAllSessions();
+    _events = StorageService.instance.getDetectionEvents();
     _gaugeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1200),
     );
-    _gaugeAnimation = Tween<double>(begin: 0.0, end: 0.92).animate(
+    _gaugeAnimation = Tween<double>(begin: 0.0, end: _safetyScore).animate(
       CurvedAnimation(parent: _gaugeController, curve: Curves.easeOutCubic),
     );
     _gaugeController.forward();
@@ -98,6 +118,65 @@ class _DriverAnalyticsPageState extends State<DriverAnalyticsPage>
 
   void _onProfileChanged() {
     if (mounted) setState(() {});
+  }
+
+  String _twoDigits(int value) => value.toString().padLeft(2, '0');
+
+  String _formatTime(DateTime value) {
+    final int hour = value.hour == 0 ? 12 : (value.hour > 12 ? value.hour - 12 : value.hour);
+    return '$hour:${_twoDigits(value.minute)} ${value.hour >= 12 ? 'PM' : 'AM'}';
+  }
+
+  String _formatDate(DateTime value) {
+    final DateTime now = DateTime.now();
+    if (value.year == now.year && value.month == now.month && value.day == now.day) {
+      return 'Today';
+    }
+    const List<String> months = <String>[
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    ];
+    return '${value.day} ${months[value.month - 1]}';
+  }
+
+  String _formatDuration(int seconds) {
+    final int hours = seconds ~/ 3600;
+    final int minutes = (seconds % 3600) ~/ 60;
+    if (hours > 0) return '${hours}h ${minutes}m';
+    if (minutes > 0) return '$minutes min';
+    return '$seconds sec';
+  }
+
+  Widget _buildStoredSession(Map<String, dynamic> session) {
+    final DateTime startedAt =
+        DateTime.tryParse(session['startedAt']?.toString() ?? '') ?? DateTime.now();
+    final int eventCount = (session['eventCount'] as num?)?.toInt() ?? 0;
+    final int maxLevel = (session['maxAlertLevel'] as num?)?.toInt() ?? 0;
+    final int duration = (session['durationSeconds'] as num?)?.toInt() ?? 0;
+
+    if (eventCount == 0) {
+      return _buildHistoryItem(
+        icon: Icons.check_circle_outline,
+        iconBgColor: primaryContainer.withValues(alpha: 0.1),
+        iconColor: primaryColor,
+        title: 'Normal Drive',
+        time: _formatTime(startedAt),
+        date: _formatDate(startedAt),
+        duration: _formatDuration(duration),
+      );
+    }
+
+    return _buildHistoryItem(
+      icon: maxLevel >= 3 ? Icons.warning_amber_rounded : Icons.error_outline,
+      iconBgColor: maxLevel >= 3 ? errorContainer : secondaryContainer,
+      iconColor: maxLevel >= 3 ? errorColor : secondaryColor,
+      title: maxLevel >= 3
+          ? 'Severe Fatigue Alert'
+          : '$eventCount Safety Event${eventCount == 1 ? '' : 's'}',
+      time: _formatTime(startedAt),
+      date: _formatDate(startedAt),
+      duration: _formatDuration(duration),
+    );
   }
 
   void _showNotificationsSheet() {
@@ -293,50 +372,23 @@ class _DriverAnalyticsPageState extends State<DriverAnalyticsPage>
               ),
               const Divider(height: 1),
               Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.all(16),
-                  children: [
-                    _buildHistoryItem(
-                      icon: Icons.warning_amber_rounded,
-                      iconBgColor: errorContainer,
-                      iconColor: errorColor,
-                      title: 'Severe Fatigue Alert',
-                      time: '2:30 PM',
-                      date: 'Today',
-                      duration: '45 min',
-                    ),
-                    const SizedBox(height: 10),
-                    _buildHistoryItem(
-                      icon: Icons.error_outline,
-                      iconBgColor: secondaryContainer,
-                      iconColor: secondaryColor,
-                      title: 'Mild Fatigue Detected',
-                      time: '10:15 AM',
-                      date: '14 Oct',
-                      duration: '1h 20m',
-                    ),
-                    const SizedBox(height: 10),
-                    _buildHistoryItem(
-                      icon: Icons.check_circle_outline,
-                      iconBgColor: primaryContainer.withValues(alpha: 0.1),
-                      iconColor: primaryColor,
-                      title: 'Normal Drive',
-                      time: '08:00 AM',
-                      date: '14 Oct',
-                      duration: '2h 15m',
-                    ),
-                    const SizedBox(height: 10),
-                    _buildHistoryItem(
-                      icon: Icons.check_circle_outline,
-                      iconBgColor: primaryContainer.withValues(alpha: 0.1),
-                      iconColor: primaryColor,
-                      title: 'Optimal Long-haul Trip',
-                      time: '09:30 AM',
-                      date: '12 Oct',
-                      duration: '3h 40m',
-                    ),
-                  ],
-                ),
+                child: _sessions.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'No driving history yet.',
+                          style: TextStyle(
+                            fontFamily: 'Manrope',
+                            color: onSurfaceVariant,
+                          ),
+                        ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _sessions.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 10),
+                        itemBuilder: (_, index) =>
+                            _buildStoredSession(_sessions[index]),
+                      ),
               ),
             ],
           ),
@@ -689,9 +741,9 @@ class _DriverAnalyticsPageState extends State<DriverAnalyticsPage>
                 ],
               ),
               const SizedBox(height: 10),
-              const Text(
-                '48',
-                style: TextStyle(
+              Text(
+                '$_totalEvents',
+                style: const TextStyle(
                   fontFamily: 'Manrope',
                   fontSize: 32,
                   fontWeight: FontWeight.w800,
@@ -752,22 +804,22 @@ class _DriverAnalyticsPageState extends State<DriverAnalyticsPage>
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: outlineVariant.withValues(alpha: 0.4)),
                 ),
-                child: const Column(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.schedule, color: secondaryColor, size: 22),
-                    SizedBox(height: 10),
+                    const Icon(Icons.schedule, color: secondaryColor, size: 22),
+                    const SizedBox(height: 10),
                     Text(
-                      '12h 30m',
-                      style: TextStyle(
+                      _formatDuration(_totalDriveSeconds),
+                      style: const TextStyle(
                         fontFamily: 'Manrope',
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: onSurface,
                       ),
                     ),
-                    SizedBox(height: 2),
-                    Text(
+                    const SizedBox(height: 2),
+                    const Text(
                       'Total Drive Time',
                       style: TextStyle(
                         fontFamily: 'JetBrains Mono',
@@ -956,35 +1008,26 @@ class _DriverAnalyticsPageState extends State<DriverAnalyticsPage>
           ],
         ),
         const SizedBox(height: 8),
-        _buildHistoryItem(
-          icon: Icons.warning_amber_rounded,
-          iconBgColor: errorContainer,
-          iconColor: errorColor,
-          title: 'Severe Fatigue Alert',
-          time: '2:30 PM',
-          date: 'Today',
-          duration: '45 min',
-        ),
-        const SizedBox(height: 10),
-        _buildHistoryItem(
-          icon: Icons.error_outline,
-          iconBgColor: secondaryContainer,
-          iconColor: secondaryColor,
-          title: 'Mild Fatigue Detected',
-          time: '10:15 AM',
-          date: '14 Oct',
-          duration: '1h 20m',
-        ),
-        const SizedBox(height: 10),
-        _buildHistoryItem(
-          icon: Icons.check_circle_outline,
-          iconBgColor: primaryContainer.withValues(alpha: 0.1),
-          iconColor: primaryColor,
-          title: 'Normal Drive',
-          time: '08:00 AM',
-          date: '14 Oct',
-          duration: '2h 15m',
-        ),
+        if (_sessions.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24),
+            child: Center(
+              child: Text(
+                'Complete a driving session to see history.',
+                style: TextStyle(
+                  fontFamily: 'Manrope',
+                  color: onSurfaceVariant,
+                ),
+              ),
+            ),
+          )
+        else
+          ..._sessions.take(3).expand(
+                (session) => <Widget>[
+                  _buildStoredSession(session),
+                  const SizedBox(height: 10),
+                ],
+              ),
       ],
     );
   }

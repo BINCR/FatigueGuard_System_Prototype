@@ -18,6 +18,7 @@ dependencies:
   image_picker: ^1.1.2  # Used for selecting images from phone gallery
   url_launcher: ^6.2.5 # Used for launching external URLs (Google Maps for navigation)
   http: ^1.6.0
+  hive_ce_flutter: ^2.3.4
 
 dev_dependencies:
   flutter_test:

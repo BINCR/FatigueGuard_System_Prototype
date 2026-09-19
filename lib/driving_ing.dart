@@ -14,6 +14,7 @@ import 'fatigue_level2.dart';
 import 'fatigue_level3.dart';
 import 'profile_data.dart';
 import 'services/esp32_service.dart';
+import 'services/storage_service.dart';
 
 class DrivingIngPage extends StatefulWidget {
   const DrivingIngPage({super.key});
@@ -67,6 +68,7 @@ class _DrivingIngPageState extends State<DrivingIngPage>
     super.initState();
 
     profileData.addListener(_onProfileChanged);
+    unawaited(StorageService.instance.startDrivingSession());
     _startTimer();
 
     _detectionSubscription = _esp32Service.results.listen((result) {
@@ -99,6 +101,7 @@ class _DrivingIngPageState extends State<DrivingIngPage>
     _detectionSubscription?.cancel();
     _connectionSubscription?.cancel();
     _esp32Service.dispose();
+    unawaited(StorageService.instance.endDrivingSession());
 
     super.dispose();
   }
@@ -198,8 +201,18 @@ class _DrivingIngPageState extends State<DrivingIngPage>
 
     _alertPageOpen = true;
 
-    try {
-      await Navigator.of(context).push<void>(
+await StorageService.instance.saveDetectionEvent(
+  label: result.label,
+  confidence: result.confidence,
+  alertLevel: result.label == 'distracted' ? 1 : _fatigueAlertLevel,
+);
+
+if (!mounted) {
+  return;
+}
+
+try {
+  await Navigator.of(context).push<void>(
         MaterialPageRoute<void>(
           builder: (_) => alertPage!,
         ),
@@ -210,6 +223,17 @@ class _DrivingIngPageState extends State<DrivingIngPage>
         _lastAlertClosedAt = DateTime.now();
       }
     }
+  }
+
+  Future<void> _endSessionAndOpen(Widget page) async {
+    await StorageService.instance.endDrivingSession();
+
+    if (!mounted) return;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute<void>(builder: (_) => page),
+    );
   }
 
   void _showDrivingDemoDialog(BuildContext context) {
@@ -830,15 +854,8 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                 ),
                 const SizedBox(height: 12),
                 ElevatedButton(
-                  onPressed: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) =>
-                            const DriverHomePage(),
-                      ),
-                    );
-                  },
+                  onPressed: () =>
+                      _endSessionAndOpen(const DriverHomePage()),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: errorColor,
                     foregroundColor: Colors.white,
@@ -926,15 +943,8 @@ class _DrivingIngPageState extends State<DrivingIngPage>
               ),
             ),
             GestureDetector(
-              onTap: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        const DriverAnalyticsPage(),
-                  ),
-                );
-              },
+              onTap: () =>
+                  _endSessionAndOpen(const DriverAnalyticsPage()),
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -962,15 +972,8 @@ class _DrivingIngPageState extends State<DrivingIngPage>
               ),
             ),
             GestureDetector(
-              onTap: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        const DriverProfilePage(),
-                  ),
-                );
-              },
+              onTap: () =>
+                  _endSessionAndOpen(const DriverProfilePage()),
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
