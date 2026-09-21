@@ -42,16 +42,23 @@ class _DriverAnalyticsPageState extends State<DriverAnalyticsPage>
 
   int get _totalEvents => _events.length;
 
+  int get _drowsyEvents =>
+      _events.where((event) => event['label'] == 'drowsy').length;
+
+  int get _distractedEvents =>
+      _events.where((event) => event['label'] == 'distracted').length;
+
   int get _totalDriveSeconds => _sessions.fold<int>(
-        0,
-        (total, session) =>
-            total + ((session['durationSeconds'] as num?)?.toInt() ?? 0),
-      );
+    0,
+    (total, session) =>
+        total + ((session['durationSeconds'] as num?)?.toInt() ?? 0),
+  );
 
   double get _safetyScore {
     if (_sessions.isEmpty) return 1.0;
-    final double penalty =
-        (_totalEvents / (_sessions.length * 5)).clamp(0, 1).toDouble();
+    final double penalty = (_totalEvents / (_sessions.length * 5))
+        .clamp(0, 1)
+        .toDouble();
     return (1 - (penalty * 0.5)).clamp(0.5, 1.0).toDouble();
   }
 
@@ -123,18 +130,32 @@ class _DriverAnalyticsPageState extends State<DriverAnalyticsPage>
   String _twoDigits(int value) => value.toString().padLeft(2, '0');
 
   String _formatTime(DateTime value) {
-    final int hour = value.hour == 0 ? 12 : (value.hour > 12 ? value.hour - 12 : value.hour);
+    final int hour = value.hour == 0
+        ? 12
+        : (value.hour > 12 ? value.hour - 12 : value.hour);
     return '$hour:${_twoDigits(value.minute)} ${value.hour >= 12 ? 'PM' : 'AM'}';
   }
 
   String _formatDate(DateTime value) {
     final DateTime now = DateTime.now();
-    if (value.year == now.year && value.month == now.month && value.day == now.day) {
+    if (value.year == now.year &&
+        value.month == now.month &&
+        value.day == now.day) {
       return 'Today';
     }
     const List<String> months = <String>[
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${value.day} ${months[value.month - 1]}';
   }
@@ -149,7 +170,8 @@ class _DriverAnalyticsPageState extends State<DriverAnalyticsPage>
 
   Widget _buildStoredSession(Map<String, dynamic> session) {
     final DateTime startedAt =
-        DateTime.tryParse(session['startedAt']?.toString() ?? '') ?? DateTime.now();
+        DateTime.tryParse(session['startedAt']?.toString() ?? '') ??
+        DateTime.now();
     final int eventCount = (session['eventCount'] as num?)?.toInt() ?? 0;
     final int maxLevel = (session['maxAlertLevel'] as num?)?.toInt() ?? 0;
     final int duration = (session['durationSeconds'] as num?)?.toInt() ?? 0;
@@ -247,7 +269,9 @@ class _DriverAnalyticsPageState extends State<DriverAnalyticsPage>
                   Expanded(
                     child: ListView.separated(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
                       itemCount: _notifications.length,
                       separatorBuilder: (context, index) =>
                           const SizedBox(height: 10),
@@ -273,8 +297,11 @@ class _DriverAnalyticsPageState extends State<DriverAnalyticsPage>
                                   color: item.iconBgColor,
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: Icon(item.icon,
-                                    color: item.iconColor, size: 20),
+                                child: Icon(
+                                  item.icon,
+                                  color: item.iconColor,
+                                  size: 20,
+                                ),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -419,7 +446,10 @@ class _DriverAnalyticsPageState extends State<DriverAnalyticsPage>
             alignment: Alignment.center,
             children: [
               IconButton(
-                icon: const Icon(Icons.notifications_outlined, color: onSurfaceVariant),
+                icon: const Icon(
+                  Icons.notifications_outlined,
+                  color: onSurfaceVariant,
+                ),
                 onPressed: _showNotificationsSheet,
               ),
               if (_unreadCount > 0)
@@ -432,7 +462,10 @@ class _DriverAnalyticsPageState extends State<DriverAnalyticsPage>
                       color: errorColor,
                       shape: BoxShape.circle,
                     ),
-                    constraints: const BoxConstraints(minWidth: 8, minHeight: 8),
+                    constraints: const BoxConstraints(
+                      minWidth: 8,
+                      minHeight: 8,
+                    ),
                   ),
                 ),
             ],
@@ -443,7 +476,9 @@ class _DriverAnalyticsPageState extends State<DriverAnalyticsPage>
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const DriverProfilePage()),
+                  MaterialPageRoute(
+                    builder: (context) => const DriverProfilePage(),
+                  ),
                 );
               },
               child: Container(
@@ -452,7 +487,9 @@ class _DriverAnalyticsPageState extends State<DriverAnalyticsPage>
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: secondaryContainer,
-                  border: Border.all(color: outlineVariant.withValues(alpha: 0.5)),
+                  border: Border.all(
+                    color: outlineVariant.withValues(alpha: 0.5),
+                  ),
                 ),
                 child: ClipOval(
                   child: profileData.avatarFile != null
@@ -462,7 +499,11 @@ class _DriverAnalyticsPageState extends State<DriverAnalyticsPage>
                           width: 36,
                           height: 36,
                         )
-                      : const Icon(Icons.person, color: secondaryColor, size: 22),
+                      : const Icon(
+                          Icons.person,
+                          color: secondaryColor,
+                          size: 22,
+                        ),
                 ),
               ),
             ),
@@ -530,11 +571,16 @@ class _DriverAnalyticsPageState extends State<DriverAnalyticsPage>
               onTap: () {
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => const DriverHomePage()),
+                  MaterialPageRoute(
+                    builder: (context) => const DriverHomePage(),
+                  ),
                 );
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: const Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -579,15 +625,24 @@ class _DriverAnalyticsPageState extends State<DriverAnalyticsPage>
               onTap: () {
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => const DriverProfilePage()),
+                  MaterialPageRoute(
+                    builder: (context) => const DriverProfilePage(),
+                  ),
                 );
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: const Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.person_outline, color: onSurfaceVariant, size: 20),
+                    Icon(
+                      Icons.person_outline,
+                      color: onSurfaceVariant,
+                      size: 20,
+                    ),
                     SizedBox(height: 2),
                     Text(
                       'Profile',
@@ -636,7 +691,9 @@ class _DriverAnalyticsPageState extends State<DriverAnalyticsPage>
                   children: [
                     CustomPaint(
                       size: const Size(180, 180),
-                      painter: _AnalyticsGaugePainter(progress: _gaugeAnimation.value),
+                      painter: _AnalyticsGaugePainter(
+                        progress: _gaugeAnimation.value,
+                      ),
                     ),
                     Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -723,7 +780,10 @@ class _DriverAnalyticsPageState extends State<DriverAnalyticsPage>
                 children: [
                   const Icon(Icons.bedtime, color: primaryColor, size: 22),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(6),
@@ -753,7 +813,7 @@ class _DriverAnalyticsPageState extends State<DriverAnalyticsPage>
               ),
               const SizedBox(height: 2),
               const Text(
-                'Total Fatigue Events',
+                'Total Safety Events',
                 style: TextStyle(
                   fontFamily: 'Manrope',
                   fontSize: 14,
@@ -782,8 +842,8 @@ class _DriverAnalyticsPageState extends State<DriverAnalyticsPage>
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                '85% better than last month',
+              Text(
+                '$_drowsyEvents drowsy • $_distractedEvents distracted',
                 style: TextStyle(
                   fontFamily: 'JetBrains Mono',
                   fontSize: 10,
@@ -802,7 +862,9 @@ class _DriverAnalyticsPageState extends State<DriverAnalyticsPage>
                 decoration: BoxDecoration(
                   color: surfaceColor,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: outlineVariant.withValues(alpha: 0.4)),
+                  border: Border.all(
+                    color: outlineVariant.withValues(alpha: 0.4),
+                  ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -838,25 +900,31 @@ class _DriverAnalyticsPageState extends State<DriverAnalyticsPage>
                 decoration: BoxDecoration(
                   color: surfaceColor,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: outlineVariant.withValues(alpha: 0.4)),
+                  border: Border.all(
+                    color: outlineVariant.withValues(alpha: 0.4),
+                  ),
                 ),
-                child: const Column(
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.home_work_outlined, color: errorColor, size: 22),
-                    SizedBox(height: 10),
+                    const Icon(
+                      Icons.visibility_off_outlined,
+                      color: errorColor,
+                      size: 22,
+                    ),
+                    const SizedBox(height: 10),
                     Text(
-                      '0',
-                      style: TextStyle(
+                      '$_distractedEvents',
+                      style: const TextStyle(
                         fontFamily: 'Manrope',
                         fontSize: 20,
                         fontWeight: FontWeight.bold,
                         color: onSurface,
                       ),
                     ),
-                    SizedBox(height: 2),
-                    Text(
-                      'SOS Triggers',
+                    const SizedBox(height: 2),
+                    const Text(
+                      'Distraction Events',
                       style: TextStyle(
                         fontFamily: 'JetBrains Mono',
                         fontSize: 11,
@@ -909,18 +977,44 @@ class _DriverAnalyticsPageState extends State<DriverAnalyticsPage>
           SizedBox(
             height: 130,
             width: double.infinity,
-            child: CustomPaint(
-              painter: _SafetyTrendChartPainter(),
-            ),
+            child: CustomPaint(painter: _SafetyTrendChartPainter()),
           ),
           const SizedBox(height: 8),
           const Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Week 1', style: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11, color: onSurfaceVariant)),
-              Text('Week 2', style: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11, color: onSurfaceVariant)),
-              Text('Week 3', style: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11, color: onSurfaceVariant)),
-              Text('Week 4', style: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 11, color: onSurfaceVariant)),
+              Text(
+                'Week 1',
+                style: TextStyle(
+                  fontFamily: 'JetBrains Mono',
+                  fontSize: 11,
+                  color: onSurfaceVariant,
+                ),
+              ),
+              Text(
+                'Week 2',
+                style: TextStyle(
+                  fontFamily: 'JetBrains Mono',
+                  fontSize: 11,
+                  color: onSurfaceVariant,
+                ),
+              ),
+              Text(
+                'Week 3',
+                style: TextStyle(
+                  fontFamily: 'JetBrains Mono',
+                  fontSize: 11,
+                  color: onSurfaceVariant,
+                ),
+              ),
+              Text(
+                'Week 4',
+                style: TextStyle(
+                  fontFamily: 'JetBrains Mono',
+                  fontSize: 11,
+                  color: onSurfaceVariant,
+                ),
+              ),
             ],
           ),
         ],
@@ -1022,7 +1116,9 @@ class _DriverAnalyticsPageState extends State<DriverAnalyticsPage>
             ),
           )
         else
-          ..._sessions.take(3).expand(
+          ..._sessions
+              .take(3)
+              .expand(
                 (session) => <Widget>[
                   _buildStoredSession(session),
                   const SizedBox(height: 10),
@@ -1168,9 +1264,21 @@ class _SafetyTrendChartPainter extends CustomPainter {
     final gridPaint = Paint()
       ..color = const Color(0xFFC7C4D8).withValues(alpha: 0.3)
       ..strokeWidth = 1;
-    canvas.drawLine(Offset(0, size.height * 0.2), Offset(size.width, size.height * 0.2), gridPaint);
-    canvas.drawLine(Offset(0, size.height * 0.5), Offset(size.width, size.height * 0.5), gridPaint);
-    canvas.drawLine(Offset(0, size.height * 0.8), Offset(size.width, size.height * 0.8), gridPaint);
+    canvas.drawLine(
+      Offset(0, size.height * 0.2),
+      Offset(size.width, size.height * 0.2),
+      gridPaint,
+    );
+    canvas.drawLine(
+      Offset(0, size.height * 0.5),
+      Offset(size.width, size.height * 0.5),
+      gridPaint,
+    );
+    canvas.drawLine(
+      Offset(0, size.height * 0.8),
+      Offset(size.width, size.height * 0.8),
+      gridPaint,
+    );
 
     final points = [
       Offset(0, size.height * 0.75),

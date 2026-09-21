@@ -44,24 +44,20 @@ class StorageService {
     _activeSessionStartedAt = now;
     _lastSavedAt.clear();
 
-    await _sessionsBox.put(
-      sessionId,
-      <String, dynamic>{
-        'id': sessionId,
-        'startedAt': now.toIso8601String(),
-        'endedAt': null,
-        'durationSeconds': 0,
-        'eventCount': 0,
-        'yawningCount': 0,
-        'eyesClosedCount': 0,
-        'distractedCount': 0,
-        'maxAlertLevel': 0,
-        'status': 'active',
+    await _sessionsBox.put(sessionId, <String, dynamic>{
+      'id': sessionId,
+      'startedAt': now.toIso8601String(),
+      'endedAt': null,
+      'durationSeconds': 0,
+      'eventCount': 0,
+      'drowsyCount': 0,
+      'distractedCount': 0,
+      'maxAlertLevel': 0,
+      'status': 'active',
 
-        // Reserved for future MySQL or cloud synchronization.
-        'synced': false,
-      },
-    );
+      // Reserved for future MySQL or cloud synchronization.
+      'synced': false,
+    });
 
     return sessionId;
   }
@@ -77,49 +73,39 @@ class StorageService {
   }) async {
     final String normalizedLabel = label.trim().toLowerCase();
 
-    const Set<String> importantLabels = <String>{
-      'eyes_closed',
-      'yawning',
-      'distracted',
-    };
+    const Set<String> importantLabels = <String>{'drowsy', 'distracted'};
 
     if (!importantLabels.contains(normalizedLabel)) {
       return;
     }
 
-    final String sessionId =
-        _activeSessionId ?? await startDrivingSession();
+    final String sessionId = _activeSessionId ?? await startDrivingSession();
 
     final DateTime now = DateTime.now();
     final DateTime? lastSaved = _lastSavedAt[normalizedLabel];
 
     // Prevent the same ESP32 result from producing too many records.
-    if (lastSaved != null &&
-        now.difference(lastSaved) < _eventCooldown) {
+    if (lastSaved != null && now.difference(lastSaved) < _eventCooldown) {
       return;
     }
 
     final String eventId = 'event_${now.microsecondsSinceEpoch}';
 
-    final double safeConfidence =
-        confidence.clamp(0.0, 1.0).toDouble();
+    final double safeConfidence = confidence.clamp(0.0, 1.0).toDouble();
 
     final int safeAlertLevel = alertLevel.clamp(0, 3);
 
-    await _eventsBox.put(
-      eventId,
-      <String, dynamic>{
-        'id': eventId,
-        'sessionId': sessionId,
-        'timestamp': now.toIso8601String(),
-        'label': normalizedLabel,
-        'confidence': safeConfidence,
-        'alertLevel': safeAlertLevel,
+    await _eventsBox.put(eventId, <String, dynamic>{
+      'id': eventId,
+      'sessionId': sessionId,
+      'timestamp': now.toIso8601String(),
+      'label': normalizedLabel,
+      'confidence': safeConfidence,
+      'alertLevel': safeAlertLevel,
 
-        // This will become true after future MySQL/cloud upload.
-        'synced': false,
-      },
-    );
+      // This will become true after future MySQL/cloud upload.
+      'synced': false,
+    });
 
     await _updateSessionSummary(
       sessionId: sessionId,
@@ -141,21 +127,14 @@ class StorageService {
       return;
     }
 
-    final Map<String, dynamic> session =
-        Map<String, dynamic>.from(rawSession);
+    final Map<String, dynamic> session = Map<String, dynamic>.from(rawSession);
 
-    session['eventCount'] =
-        ((session['eventCount'] as num?)?.toInt() ?? 0) + 1;
+    session['eventCount'] = ((session['eventCount'] as num?)?.toInt() ?? 0) + 1;
 
     switch (label) {
-      case 'yawning':
-        session['yawningCount'] =
-            ((session['yawningCount'] as num?)?.toInt() ?? 0) + 1;
-        break;
-
-      case 'eyes_closed':
-        session['eyesClosedCount'] =
-            ((session['eyesClosedCount'] as num?)?.toInt() ?? 0) + 1;
+      case 'drowsy':
+        session['drowsyCount'] =
+            ((session['drowsyCount'] as num?)?.toInt() ?? 0) + 1;
         break;
 
       case 'distracted':
@@ -164,11 +143,9 @@ class StorageService {
         break;
     }
 
-    final int currentMaximum =
-        (session['maxAlertLevel'] as num?)?.toInt() ?? 0;
+    final int currentMaximum = (session['maxAlertLevel'] as num?)?.toInt() ?? 0;
 
-    session['maxAlertLevel'] =
-        math.max(currentMaximum, alertLevel);
+    session['maxAlertLevel'] = math.max(currentMaximum, alertLevel);
 
     session['updatedAt'] = DateTime.now().toIso8601String();
     session['synced'] = false;
@@ -190,12 +167,12 @@ class StorageService {
     if (rawSession is Map) {
       final DateTime now = DateTime.now();
 
-      final Map<String, dynamic> session =
-          Map<String, dynamic>.from(rawSession);
+      final Map<String, dynamic> session = Map<String, dynamic>.from(
+        rawSession,
+      );
 
       session['endedAt'] = now.toIso8601String();
-      session['durationSeconds'] =
-          now.difference(startedAt).inSeconds;
+      session['durationSeconds'] = now.difference(startedAt).inSeconds;
       session['status'] = 'completed';
       session['synced'] = false;
 
@@ -209,29 +186,20 @@ class StorageService {
 
   /// Returns all driving sessions with the newest session first.
   List<Map<String, dynamic>> getAllSessions() {
-    final List<Map<String, dynamic>> sessions =
-        _sessionsBox.values
-            .whereType<Map>()
-            .map(
-              (Map<dynamic, dynamic> session) =>
-                  Map<String, dynamic>.from(session),
-            )
-            .toList();
+    final List<Map<String, dynamic>> sessions = _sessionsBox.values
+        .whereType<Map>()
+        .map(
+          (Map<dynamic, dynamic> session) => Map<String, dynamic>.from(session),
+        )
+        .toList();
 
-    sessions.sort(
-      (
-        Map<String, dynamic> first,
-        Map<String, dynamic> second,
-      ) {
-        final String firstTime =
-            first['startedAt']?.toString() ?? '';
+    sessions.sort((Map<String, dynamic> first, Map<String, dynamic> second) {
+      final String firstTime = first['startedAt']?.toString() ?? '';
 
-        final String secondTime =
-            second['startedAt']?.toString() ?? '';
+      final String secondTime = second['startedAt']?.toString() ?? '';
 
-        return secondTime.compareTo(firstTime);
-      },
-    );
+      return secondTime.compareTo(firstTime);
+    });
 
     return sessions;
   }
@@ -239,37 +207,23 @@ class StorageService {
   /// Returns all detection events with the newest event first.
   ///
   /// Supplying a session ID returns events from that session only.
-  List<Map<String, dynamic>> getDetectionEvents({
-    String? sessionId,
-  }) {
-    final List<Map<String, dynamic>> events =
-        _eventsBox.values
-            .whereType<Map>()
-            .map(
-              (Map<dynamic, dynamic> event) =>
-                  Map<String, dynamic>.from(event),
-            )
-            .where(
-              (Map<String, dynamic> event) =>
-                  sessionId == null ||
-                  event['sessionId'] == sessionId,
-            )
-            .toList();
+  List<Map<String, dynamic>> getDetectionEvents({String? sessionId}) {
+    final List<Map<String, dynamic>> events = _eventsBox.values
+        .whereType<Map>()
+        .map((Map<dynamic, dynamic> event) => Map<String, dynamic>.from(event))
+        .where(
+          (Map<String, dynamic> event) =>
+              sessionId == null || event['sessionId'] == sessionId,
+        )
+        .toList();
 
-    events.sort(
-      (
-        Map<String, dynamic> first,
-        Map<String, dynamic> second,
-      ) {
-        final String firstTime =
-            first['timestamp']?.toString() ?? '';
+    events.sort((Map<String, dynamic> first, Map<String, dynamic> second) {
+      final String firstTime = first['timestamp']?.toString() ?? '';
 
-        final String secondTime =
-            second['timestamp']?.toString() ?? '';
+      final String secondTime = second['timestamp']?.toString() ?? '';
 
-        return secondTime.compareTo(firstTime);
-      },
-    );
+      return secondTime.compareTo(firstTime);
+    });
 
     return events;
   }

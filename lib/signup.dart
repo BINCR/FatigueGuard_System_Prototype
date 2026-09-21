@@ -135,11 +135,11 @@ class _SignupPageState extends State<SignupPage> {
                           _buildTextField("EMAIL", "driver@gmail.com", _emailController, isEmail: true),
                           _buildTextField("PHONE NUMBER", "+60123456789", _phoneController),
                           _buildTextField("PASSWORD", "••••••••", _passwordController, isPassword: true),
-                          
+
                           // Role Select
                           _buildLabel("ROLE"),
                           DropdownButtonFormField<String>(
-                            value: _selectedRole,
+                            initialValue: _selectedRole,
                             items: const [
                               DropdownMenuItem(value: 'driver', child: Text("Driver")),
                               DropdownMenuItem(value: 'fleet_manager', child: Text("Fleet Manager")),

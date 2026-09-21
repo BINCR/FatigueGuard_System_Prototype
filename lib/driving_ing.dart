@@ -42,11 +42,14 @@ class _DrivingIngPageState extends State<DrivingIngPage>
   int _fatigueAlertLevel = 0;
   DateTime? _lastAlertClosedAt;
 
-  // Hardware arrives later, so keep this true for mock testing.
-  // Change to false when connecting the real ESP32.
-  static const bool _useMockData = true;
+  // Real ESP32 is the default. The user can switch to Demo from the app bar.
+  bool _useMockData = false;
+
+  String? _candidateAlertLabel;
+  int _candidateAlertCount = 0;
 
   static const double _minimumAlertConfidence = 0.80;
+  static const int _requiredConsecutiveDetections = 3;
   static const Duration _alertCooldown = Duration(seconds: 8);
 
   static const Color primaryColor = Color(0xFF3525CD);
@@ -82,8 +85,9 @@ class _DrivingIngPageState extends State<DrivingIngPage>
       unawaited(_handleDetectionResult(result));
     });
 
-    _connectionSubscription =
-        _esp32Service.connectionStatus.listen((connected) {
+    _connectionSubscription = _esp32Service.connectionStatus.listen((
+      connected,
+    ) {
       if (!mounted) return;
 
       setState(() {
@@ -139,12 +143,47 @@ class _DrivingIngPageState extends State<DrivingIngPage>
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          _isPaused ? 'Session paused' : 'Session resumed',
-        ),
+        content: Text(_isPaused ? 'Session paused' : 'Session resumed'),
         duration: const Duration(seconds: 1),
       ),
     );
+  }
+
+  void _setDetectionMode(bool useMockData) {
+    if (_useMockData == useMockData) return;
+
+    setState(() {
+      _useMockData = useMockData;
+      _esp32Connected = false;
+      _currentLabel = 'waiting';
+      _currentConfidence = 0.0;
+      _candidateAlertLabel = null;
+      _candidateAlertCount = 0;
+    });
+
+    _esp32Service.start(mockMode: _useMockData);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          _useMockData
+              ? 'Demo mode enabled'
+              : 'Real ESP32 mode enabled. Connect to FatigueGuard-ESP32 Wi-Fi.',
+        ),
+      ),
+    );
+  }
+
+  double get _alertnessScore {
+    switch (_currentLabel) {
+      case 'normal':
+        return _currentConfidence.clamp(0.0, 1.0).toDouble();
+      case 'drowsy':
+      case 'distracted':
+        return (1.0 - _currentConfidence).clamp(0.0, 1.0).toDouble();
+      default:
+        return 0.0;
+    }
   }
 
   Future<void> _handleDetectionResult(DetectionResult result) async {
@@ -163,11 +202,30 @@ class _DrivingIngPageState extends State<DrivingIngPage>
       return;
     }
 
+    if (result.label == 'normal' || result.label == 'uncertain') {
+      _candidateAlertLabel = null;
+      _candidateAlertCount = 0;
+      return;
+    }
+
+    if (_candidateAlertLabel == result.label) {
+      _candidateAlertCount++;
+    } else {
+      _candidateAlertLabel = result.label;
+      _candidateAlertCount = 1;
+    }
+
+    if (_candidateAlertCount < _requiredConsecutiveDetections) {
+      return;
+    }
+
+    _candidateAlertLabel = null;
+    _candidateAlertCount = 0;
+
     Widget? alertPage;
 
     switch (result.label) {
-      case 'eyes_closed':
-      case 'yawning':
+      case 'drowsy':
         _fatigueAlertLevel = (_fatigueAlertLevel % 3) + 1;
 
         switch (_fatigueAlertLevel) {
@@ -201,22 +259,20 @@ class _DrivingIngPageState extends State<DrivingIngPage>
 
     _alertPageOpen = true;
 
-await StorageService.instance.saveDetectionEvent(
-  label: result.label,
-  confidence: result.confidence,
-  alertLevel: result.label == 'distracted' ? 1 : _fatigueAlertLevel,
-);
+    await StorageService.instance.saveDetectionEvent(
+      label: result.label,
+      confidence: result.confidence,
+      alertLevel: result.label == 'distracted' ? 1 : _fatigueAlertLevel,
+    );
 
-if (!mounted) {
-  return;
-}
+    if (!mounted) {
+      return;
+    }
 
-try {
-  await Navigator.of(context).push<void>(
-        MaterialPageRoute<void>(
-          builder: (_) => alertPage!,
-        ),
-      );
+    try {
+      await Navigator.of(
+        context,
+      ).push<void>(MaterialPageRoute<void>(builder: (_) => alertPage!));
     } finally {
       if (mounted) {
         _alertPageOpen = false;
@@ -356,12 +412,36 @@ try {
           ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(
-              Icons.bug_report,
-              color: Colors.amber,
-              size: 26,
+          PopupMenuButton<bool>(
+            tooltip: 'Detection mode',
+            icon: Icon(
+              _useMockData ? Icons.science_outlined : Icons.wifi_tethering,
+              color: _useMockData ? Colors.amber : primaryColor,
             ),
+            onSelected: _setDetectionMode,
+            itemBuilder: (context) => const [
+              PopupMenuItem<bool>(
+                value: false,
+                child: ListTile(
+                  leading: Icon(Icons.wifi_tethering),
+                  title: Text('Real ESP32'),
+                  subtitle: Text('192.168.4.1'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+              PopupMenuItem<bool>(
+                value: true,
+                child: ListTile(
+                  leading: Icon(Icons.science_outlined),
+                  title: Text('Demo mode'),
+                  subtitle: Text('Simulated results'),
+                  contentPadding: EdgeInsets.zero,
+                ),
+              ),
+            ],
+          ),
+          IconButton(
+            icon: const Icon(Icons.bug_report, color: Colors.amber, size: 26),
             tooltip: 'Demo Alert Triggers',
             onPressed: () => _showDrivingDemoDialog(context),
           ),
@@ -386,11 +466,7 @@ try {
                         width: 40,
                         height: 40,
                       )
-                    : const Icon(
-                        Icons.person,
-                        color: secondaryColor,
-                        size: 24,
-                      ),
+                    : const Icon(Icons.person, color: secondaryColor, size: 24),
               ),
             ),
           ),
@@ -428,9 +504,7 @@ try {
                               decoration: BoxDecoration(
                                 color: !_esp32Connected
                                     ? Colors.grey
-                                    : (_isPaused
-                                        ? Colors.amber
-                                        : Colors.green),
+                                    : (_isPaused ? Colors.amber : Colors.green),
                                 shape: BoxShape.circle,
                               ),
                             ),
@@ -439,10 +513,10 @@ try {
                               _isPaused
                                   ? 'SESSION PAUSED'
                                   : _esp32Connected
-                                      ? '${_useMockData ? 'MOCK' : 'ESP32'}: '
-                                          '${_currentLabel.toUpperCase()} '
-                                          '${(_currentConfidence * 100).toStringAsFixed(0)}%'
-                                      : 'ESP32 DISCONNECTED',
+                                  ? '${_useMockData ? 'DEMO' : 'ESP32'}: '
+                                        '${_currentLabel.toUpperCase()} '
+                                        '${(_currentConfidence * 100).toStringAsFixed(0)}%'
+                                  : 'ESP32 DISCONNECTED',
                               style: const TextStyle(
                                 fontFamily: 'JetBrains Mono',
                                 fontSize: 11,
@@ -479,7 +553,7 @@ try {
                         CustomPaint(
                           size: const Size(220, 220),
                           painter: _AlertnessRingPainter(
-                            progress: 0.94,
+                            progress: _alertnessScore,
                           ),
                         ),
                         Container(
@@ -515,9 +589,9 @@ try {
                                 ),
                               ),
                               const SizedBox(height: 6),
-                              const Text(
-                                '94%',
-                                style: TextStyle(
+                              Text(
+                                '${(_alertnessScore * 100).round()}%',
+                                style: const TextStyle(
                                   fontFamily: 'Manrope',
                                   fontSize: 32,
                                   fontWeight: FontWeight.w800,
@@ -560,8 +634,7 @@ try {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 const Icon(
                                   Icons.remove_red_eye_outlined,
@@ -640,8 +713,7 @@ try {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              mainAxisAlignment:
-                                  MainAxisAlignment.spaceBetween,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 const Icon(
                                   Icons.height,
@@ -774,9 +846,7 @@ try {
                   decoration: BoxDecoration(
                     color: const Color(0xFFE8F5E9),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: const Color(0xFFA5D6A7),
-                    ),
+                    border: Border.all(color: const Color(0xFFA5D6A7)),
                   ),
                   child: const Row(
                     children: [
@@ -820,10 +890,7 @@ try {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: surfaceContainerHigh,
                     foregroundColor: onSurfaceVariant,
-                    minimumSize: const Size(
-                      double.infinity,
-                      56,
-                    ),
+                    minimumSize: const Size(double.infinity, 56),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -833,16 +900,12 @@ try {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        _isPaused
-                            ? Icons.play_circle
-                            : Icons.pause_circle,
+                        _isPaused ? Icons.play_circle : Icons.pause_circle,
                         size: 22,
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        _isPaused
-                            ? 'RESUME SESSION'
-                            : 'PAUSE SESSION',
+                        _isPaused ? 'RESUME SESSION' : 'PAUSE SESSION',
                         style: const TextStyle(
                           fontFamily: 'Manrope',
                           fontSize: 15,
@@ -854,15 +917,11 @@ try {
                 ),
                 const SizedBox(height: 12),
                 ElevatedButton(
-                  onPressed: () =>
-                      _endSessionAndOpen(const DriverHomePage()),
+                  onPressed: () => _endSessionAndOpen(const DriverHomePage()),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: errorColor,
                     foregroundColor: Colors.white,
-                    minimumSize: const Size(
-                      double.infinity,
-                      56,
-                    ),
+                    minimumSize: const Size(double.infinity, 56),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
@@ -871,10 +930,7 @@ try {
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.stop_circle,
-                        size: 22,
-                      ),
+                      Icon(Icons.stop_circle, size: 22),
                       SizedBox(width: 8),
                       Text(
                         'END SESSION',
@@ -893,15 +949,10 @@ try {
         ),
       ),
       bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(
-          horizontal: 20,
-          vertical: 10,
-        ),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
           color: surfaceColor,
-          borderRadius: const BorderRadius.vertical(
-            top: Radius.circular(20),
-          ),
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.04),
@@ -914,21 +965,14 @@ try {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 8,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               decoration: BoxDecoration(
                 color: primaryContainer,
                 borderRadius: BorderRadius.circular(9999),
               ),
               child: const Row(
                 children: [
-                  Icon(
-                    Icons.visibility,
-                    color: onPrimaryContainer,
-                    size: 18,
-                  ),
+                  Icon(Icons.visibility, color: onPrimaryContainer, size: 18),
                   SizedBox(width: 6),
                   Text(
                     'Monitoring',
@@ -943,8 +987,7 @@ try {
               ),
             ),
             GestureDetector(
-              onTap: () =>
-                  _endSessionAndOpen(const DriverAnalyticsPage()),
+              onTap: () => _endSessionAndOpen(const DriverAnalyticsPage()),
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -952,11 +995,7 @@ try {
                 ),
                 child: const Row(
                   children: [
-                    Icon(
-                      Icons.leaderboard,
-                      color: onSurfaceVariant,
-                      size: 18,
-                    ),
+                    Icon(Icons.leaderboard, color: onSurfaceVariant, size: 18),
                     SizedBox(width: 6),
                     Text(
                       'Analytics',
@@ -972,8 +1011,7 @@ try {
               ),
             ),
             GestureDetector(
-              onTap: () =>
-                  _endSessionAndOpen(const DriverProfilePage()),
+              onTap: () => _endSessionAndOpen(const DriverProfilePage()),
               child: Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16,
@@ -981,11 +1019,7 @@ try {
                 ),
                 child: const Row(
                   children: [
-                    Icon(
-                      Icons.person,
-                      color: onSurfaceVariant,
-                      size: 18,
-                    ),
+                    Icon(Icons.person, color: onSurfaceVariant, size: 18),
                     SizedBox(width: 6),
                     Text(
                       'Profile',
@@ -1008,18 +1042,13 @@ try {
 }
 
 class _AlertnessRingPainter extends CustomPainter {
-  _AlertnessRingPainter({
-    required this.progress,
-  });
+  _AlertnessRingPainter({required this.progress});
 
   final double progress;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final Offset center = Offset(
-      size.width / 2,
-      size.height / 2,
-    );
+    final Offset center = Offset(size.width / 2, size.height / 2);
 
     final double radius = (size.width - 16) / 2;
 
@@ -1028,11 +1057,7 @@ class _AlertnessRingPainter extends CustomPainter {
       ..strokeWidth = 14
       ..style = PaintingStyle.stroke;
 
-    canvas.drawCircle(
-      center,
-      radius,
-      trackPaint,
-    );
+    canvas.drawCircle(center, radius, trackPaint);
 
     final Paint progressPaint = Paint()
       ..color = const Color(0xFF3525CD)
@@ -1044,10 +1069,7 @@ class _AlertnessRingPainter extends CustomPainter {
     final double sweepAngle = 2 * math.pi * progress;
 
     canvas.drawArc(
-      Rect.fromCircle(
-        center: center,
-        radius: radius,
-      ),
+      Rect.fromCircle(center: center, radius: radius),
       startAngle,
       sweepAngle,
       false,
@@ -1056,9 +1078,7 @@ class _AlertnessRingPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(
-    covariant _AlertnessRingPainter oldDelegate,
-  ) {
+  bool shouldRepaint(covariant _AlertnessRingPainter oldDelegate) {
     return oldDelegate.progress != progress;
   }
 }

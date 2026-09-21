@@ -4,10 +4,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class DetectionResult {
-  const DetectionResult({
-    required this.label,
-    required this.confidence,
-  });
+  const DetectionResult({required this.label, required this.confidence});
 
   final String label;
   final double confidence;
@@ -16,10 +13,7 @@ class DetectionResult {
     final dynamic rawConfidence = json['confidence'];
 
     return DetectionResult(
-      label: (json['label'] ?? 'uncertain')
-          .toString()
-          .trim()
-          .toLowerCase(),
+      label: (json['label'] ?? 'uncertain').toString().trim().toLowerCase(),
       confidence: rawConfidence is num
           ? rawConfidence.toDouble()
           : double.tryParse(rawConfidence?.toString() ?? '') ?? 0.0,
@@ -28,9 +22,7 @@ class DetectionResult {
 }
 
 class Esp32Service {
-  Esp32Service({
-    this.baseUrl = 'http://192.168.4.1',
-  });
+  Esp32Service({this.baseUrl = 'http://192.168.4.1'});
 
   final String baseUrl;
   final http.Client _client = http.Client();
@@ -105,8 +97,7 @@ class Esp32Service {
   void _emitMockResult() {
     const mockResults = <DetectionResult>[
       DetectionResult(label: 'normal', confidence: 0.97),
-      DetectionResult(label: 'eyes_closed', confidence: 0.91),
-      DetectionResult(label: 'yawning', confidence: 0.89),
+      DetectionResult(label: 'drowsy', confidence: 0.91),
       DetectionResult(label: 'distracted', confidence: 0.93),
       DetectionResult(label: 'uncertain', confidence: 0.55),
     ];
