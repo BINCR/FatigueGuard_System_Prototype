@@ -45,11 +45,19 @@ class _DrivingIngPageState extends State<DrivingIngPage>
   // Real ESP32 is the default. The user can switch to Demo from the app bar.
   bool _useMockData = false;
 
-  String? _candidateAlertLabel;
-  int _candidateAlertCount = 0;
+  final List<bool> _recentDrowsyDetections = <bool>[];
+  int _consecutiveDistractedDetections = 0;
 
-  static const double _minimumAlertConfidence = 0.80;
-  static const int _requiredConsecutiveDetections = 3;
+  // The ESP32 test showed that closed eyes are usually classified as drowsy
+  // between 60% and 93%, with an occasional normal/uncertain frame in between.
+  // Use a rolling vote so one unstable frame does not cancel a real warning.
+  static const double _drowsyAlertConfidence = 0.60;
+  static const int _drowsyWindowSize = 5;
+  static const int _requiredDrowsyVotes = 3;
+
+  // Distracted detection was much more stable, so keep its stricter rule.
+  static const double _distractedAlertConfidence = 0.80;
+  static const int _requiredConsecutiveDistractedDetections = 3;
   static const Duration _alertCooldown = Duration(seconds: 8);
 
   static const Color primaryColor = Color(0xFF3525CD);
@@ -157,8 +165,8 @@ class _DrivingIngPageState extends State<DrivingIngPage>
       _esp32Connected = false;
       _currentLabel = 'waiting';
       _currentConfidence = 0.0;
-      _candidateAlertLabel = null;
-      _candidateAlertCount = 0;
+      _recentDrowsyDetections.clear();
+      _consecutiveDistractedDetections = 0;
     });
 
     _esp32Service.start(mockMode: _useMockData);
@@ -191,10 +199,6 @@ class _DrivingIngPageState extends State<DrivingIngPage>
       return;
     }
 
-    if (result.confidence < _minimumAlertConfidence) {
-      return;
-    }
-
     final DateTime now = DateTime.now();
 
     if (_lastAlertClosedAt != null &&
@@ -202,29 +206,44 @@ class _DrivingIngPageState extends State<DrivingIngPage>
       return;
     }
 
-    if (result.label == 'normal' || result.label == 'uncertain') {
-      _candidateAlertLabel = null;
-      _candidateAlertCount = 0;
-      return;
+    final bool isDrowsyVote =
+        result.label == 'drowsy' && result.confidence >= _drowsyAlertConfidence;
+
+    _recentDrowsyDetections.add(isDrowsyVote);
+
+    if (_recentDrowsyDetections.length > _drowsyWindowSize) {
+      _recentDrowsyDetections.removeAt(0);
     }
 
-    if (_candidateAlertLabel == result.label) {
-      _candidateAlertCount++;
+    if (result.label == 'distracted' &&
+        result.confidence >= _distractedAlertConfidence) {
+      _consecutiveDistractedDetections++;
     } else {
-      _candidateAlertLabel = result.label;
-      _candidateAlertCount = 1;
+      _consecutiveDistractedDetections = 0;
     }
 
-    if (_candidateAlertCount < _requiredConsecutiveDetections) {
+    final int drowsyVotes = _recentDrowsyDetections
+        .where((bool detected) => detected)
+        .length;
+
+    final bool shouldAlertDrowsy =
+        isDrowsyVote && drowsyVotes >= _requiredDrowsyVotes;
+    final bool shouldAlertDistracted =
+        _consecutiveDistractedDetections >=
+        _requiredConsecutiveDistractedDetections;
+
+    if (!shouldAlertDrowsy && !shouldAlertDistracted) {
       return;
     }
 
-    _candidateAlertLabel = null;
-    _candidateAlertCount = 0;
+    final String alertLabel = shouldAlertDrowsy ? 'drowsy' : 'distracted';
+
+    _recentDrowsyDetections.clear();
+    _consecutiveDistractedDetections = 0;
 
     Widget? alertPage;
 
-    switch (result.label) {
+    switch (alertLabel) {
       case 'drowsy':
         _fatigueAlertLevel = (_fatigueAlertLevel % 3) + 1;
 
@@ -260,9 +279,9 @@ class _DrivingIngPageState extends State<DrivingIngPage>
     _alertPageOpen = true;
 
     await StorageService.instance.saveDetectionEvent(
-      label: result.label,
+      label: alertLabel,
       confidence: result.confidence,
-      alertLevel: result.label == 'distracted' ? 1 : _fatigueAlertLevel,
+      alertLevel: alertLabel == 'distracted' ? 1 : _fatigueAlertLevel,
     );
 
     if (!mounted) {
