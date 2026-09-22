@@ -19,6 +19,8 @@ dependencies:
   url_launcher: ^6.2.5 # Used for launching external URLs (Google Maps for navigation)
   http: ^1.6.0
   hive_ce_flutter: ^2.3.4
+  google_mlkit_face_detection: ^0.15.1
+  path_provider: ^2.1.6
 
 dev_dependencies:
   flutter_test:

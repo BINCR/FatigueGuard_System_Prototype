@@ -14,6 +14,7 @@ import 'fatigue_level2.dart';
 import 'fatigue_level3.dart';
 import 'profile_data.dart';
 import 'services/esp32_service.dart';
+import 'services/face_analysis_service.dart';
 import 'services/storage_service.dart';
 
 class DrivingIngPage extends StatefulWidget {
@@ -30,13 +31,20 @@ class _DrivingIngPageState extends State<DrivingIngPage>
   bool _isPaused = false;
 
   final Esp32Service _esp32Service = Esp32Service();
+  final FaceAnalysisService _faceAnalysisService = FaceAnalysisService();
 
   StreamSubscription<DetectionResult>? _detectionSubscription;
   StreamSubscription<bool>? _connectionSubscription;
+  StreamSubscription<FaceMetrics>? _faceMetricsSubscription;
 
   String _currentLabel = 'waiting';
   double _currentConfidence = 0.0;
   bool _esp32Connected = false;
+  bool _faceDetected = false;
+  double _ear = 0;
+  double _mar = 0;
+  int _blinkRate = 0;
+  String _headPosition = 'Waiting';
 
   bool _alertPageOpen = false;
   int _fatigueAlertLevel = 0;
@@ -103,7 +111,20 @@ class _DrivingIngPageState extends State<DrivingIngPage>
       });
     });
 
+    _faceMetricsSubscription = _faceAnalysisService.metrics.listen((metrics) {
+      if (!mounted) return;
+
+      setState(() {
+        _faceDetected = metrics.faceDetected;
+        _ear = metrics.ear;
+        _mar = metrics.mar;
+        _blinkRate = metrics.blinkRate;
+        _headPosition = metrics.headPosition;
+      });
+    });
+
     _esp32Service.start(mockMode: _useMockData);
+    unawaited(_faceAnalysisService.start());
   }
 
   @override
@@ -112,7 +133,9 @@ class _DrivingIngPageState extends State<DrivingIngPage>
     _timer?.cancel();
     _detectionSubscription?.cancel();
     _connectionSubscription?.cancel();
+    _faceMetricsSubscription?.cancel();
     _esp32Service.dispose();
+    unawaited(_faceAnalysisService.dispose());
     unawaited(StorageService.instance.endDrivingSession());
 
     super.dispose();
@@ -693,15 +716,15 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                             ),
                             const SizedBox(height: 2),
                             RichText(
-                              text: const TextSpan(
-                                text: '12',
-                                style: TextStyle(
+                              text: TextSpan(
+                                text: _faceDetected ? '$_blinkRate' : '--',
+                                style: const TextStyle(
                                   fontFamily: 'Manrope',
                                   fontSize: 22,
                                   fontWeight: FontWeight.bold,
                                   color: onSurface,
                                 ),
-                                children: [
+                                children: const [
                                   TextSpan(
                                     text: ' /min',
                                     style: TextStyle(
@@ -760,9 +783,9 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                               ),
                             ),
                             const SizedBox(height: 2),
-                            const Text(
-                              'Stable',
-                              style: TextStyle(
+                            Text(
+                              _headPosition,
+                              style: const TextStyle(
                                 fontFamily: 'Manrope',
                                 fontSize: 22,
                                 fontWeight: FontWeight.bold,
@@ -805,7 +828,7 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             const Text(
-                              'YAWN COUNT',
+                              'LIVE FACE METRICS',
                               style: TextStyle(
                                 fontFamily: 'JetBrains Mono',
                                 fontSize: 11,
@@ -815,18 +838,22 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                             ),
                             const SizedBox(height: 2),
                             RichText(
-                              text: const TextSpan(
-                                text: '0',
-                                style: TextStyle(
+                              text: TextSpan(
+                                text: _faceDetected
+                                    ? 'EAR ${_ear.toStringAsFixed(3)}'
+                                    : 'No face detected',
+                                style: const TextStyle(
                                   fontFamily: 'Manrope',
-                                  fontSize: 20,
+                                  fontSize: 16,
                                   fontWeight: FontWeight.bold,
                                   color: onSurface,
                                 ),
                                 children: [
                                   TextSpan(
-                                    text: ' detections',
-                                    style: TextStyle(
+                                    text: _faceDetected
+                                        ? '   MAR ${_mar.toStringAsFixed(3)}'
+                                        : '',
+                                    style: const TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.normal,
                                       color: onSurfaceVariant,
@@ -848,7 +875,7 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                         child: Align(
                           alignment: Alignment.centerLeft,
                           child: Container(
-                            width: 0,
+                            width: _faceDetected ? 80 : 0,
                             decoration: BoxDecoration(
                               color: primaryColor,
                               borderRadius: BorderRadius.circular(9999),
