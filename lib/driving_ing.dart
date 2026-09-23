@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 import 'collision_detect.dart';
 import 'distraction_alert.dart';
@@ -12,10 +13,12 @@ import 'driver_profile.dart';
 import 'fatigue_level1.dart';
 import 'fatigue_level2.dart';
 import 'fatigue_level3.dart';
+import 'models/voice_intent.dart';
 import 'profile_data.dart';
 import 'services/esp32_service.dart';
 import 'services/face_analysis_service.dart';
 import 'services/storage_service.dart';
+import 'services/voice_command_service.dart';
 
 class DrivingIngPage extends StatefulWidget {
   const DrivingIngPage({super.key});
@@ -32,10 +35,17 @@ class _DrivingIngPageState extends State<DrivingIngPage>
 
   final Esp32Service _esp32Service = Esp32Service();
   final FaceAnalysisService _faceAnalysisService = FaceAnalysisService();
+  final VoiceCommandService _voiceCommandService = VoiceCommandService();
+  final FlutterTts _voiceFeedback = FlutterTts();
 
   StreamSubscription<DetectionResult>? _detectionSubscription;
   StreamSubscription<bool>? _connectionSubscription;
   StreamSubscription<FaceMetrics>? _faceMetricsSubscription;
+  StreamSubscription<VoiceCommand>? _voiceCommandSubscription;
+  StreamSubscription<bool>? _voiceListeningSubscription;
+
+  bool _voiceListening = false;
+  bool _voiceFeedbackEnabled = true;
 
   String _currentLabel = 'waiting';
   double _currentConfidence = 0.0;
@@ -136,6 +146,155 @@ class _DrivingIngPageState extends State<DrivingIngPage>
 
     _esp32Service.start(mockMode: _useMockData);
     unawaited(_faceAnalysisService.start());
+
+    _voiceCommandSubscription = _voiceCommandService.commands.listen((
+      VoiceCommand command,
+    ) {
+      unawaited(_handleVoiceCommand(command));
+    });
+
+    _voiceListeningSubscription = _voiceCommandService.listeningStatus.listen((
+      bool listening,
+    ) {
+      if (!mounted) return;
+
+      setState(() {
+        _voiceListening = listening;
+      });
+    });
+
+    unawaited(_startVoiceControl());
+  }
+
+  Future<void> _startVoiceControl() async {
+    await _voiceFeedback.setLanguage('en-US');
+    await _voiceFeedback.setSpeechRate(0.5);
+    await _voiceFeedback.setPitch(1.0);
+    await _voiceFeedback.awaitSpeakCompletion(true);
+
+    final bool started = await _voiceCommandService.start();
+
+    if (!started && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Voice control unavailable. Please allow microphone permission.',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _handleVoiceCommand(VoiceCommand command) async {
+    switch (command.intent) {
+      case VoiceIntent.startMonitoring:
+        if (_isPaused && mounted) {
+          setState(() {
+            _isPaused = false;
+          });
+        }
+        await _speakVoiceResponse('Monitoring started.');
+        break;
+      case VoiceIntent.stopMonitoring:
+        if (!_isPaused && mounted) {
+          setState(() {
+            _isPaused = true;
+          });
+        }
+        await _speakVoiceResponse('Monitoring paused.');
+        break;
+      case VoiceIntent.dismissWarning:
+        await _dismissWarningByVoice();
+        break;
+      case VoiceIntent.checkStatus:
+        await _speakCurrentStatus();
+        break;
+      case VoiceIntent.openMonitoring:
+        await _speakVoiceResponse('Monitoring page is already open.');
+        break;
+      case VoiceIntent.openAnalytics:
+        await _speakVoiceResponse('Opening analytics.');
+        if (!mounted) return;
+        await _endSessionAndOpen(const DriverAnalyticsPage());
+        break;
+      case VoiceIntent.openProfile:
+        await _speakVoiceResponse('Opening profile.');
+        if (!mounted) return;
+        await _endSessionAndOpen(const DriverProfilePage());
+        break;
+      case VoiceIntent.mute:
+        _voiceFeedbackEnabled = false;
+        await _voiceFeedback.stop();
+        break;
+      case VoiceIntent.enableSound:
+        _voiceFeedbackEnabled = true;
+        await _speakVoiceResponse('Voice feedback enabled.');
+        break;
+      case VoiceIntent.unknown:
+        await _speakVoiceResponse('Command not recognised.');
+        break;
+      case VoiceIntent.none:
+        break;
+    }
+  }
+
+  Future<void> _dismissWarningByVoice() async {
+    bool warningDismissed = false;
+
+    if (_testNotification != null && mounted) {
+      _testNotificationTimer?.cancel();
+      setState(() {
+        _testNotification = null;
+      });
+      warningDismissed = true;
+    }
+
+    if (_alertPageOpen && mounted) {
+      await Navigator.of(context).maybePop();
+      warningDismissed = true;
+    }
+
+    await _speakVoiceResponse(
+      warningDismissed ? 'Warning dismissed.' : 'There is no active warning.',
+    );
+  }
+
+  Future<void> _speakCurrentStatus() async {
+    if (!_esp32Connected) {
+      await _speakVoiceResponse('ESP32 camera is not connected.');
+      return;
+    }
+
+    if (!_faceDetected) {
+      await _speakVoiceResponse('No face is currently detected.');
+      return;
+    }
+
+    final int alertness = (_alertnessScore * 100).round();
+
+    if (_faceFatigueDetected) {
+      await _speakVoiceResponse(
+        'Fatigue detected. $_fatigueReason. '
+        'Alertness is $alertness percent.',
+      );
+      return;
+    }
+
+    await _speakVoiceResponse(
+      'Driver status is normal. Alertness is $alertness percent.',
+    );
+  }
+
+  Future<void> _speakVoiceResponse(String message) async {
+    if (!_voiceFeedbackEnabled) return;
+
+    await _voiceCommandService.stop();
+    await _voiceFeedback.stop();
+    await _voiceFeedback.speak(message);
+
+    if (mounted) {
+      await _voiceCommandService.start();
+    }
   }
 
   @override
@@ -146,8 +305,12 @@ class _DrivingIngPageState extends State<DrivingIngPage>
     _detectionSubscription?.cancel();
     _connectionSubscription?.cancel();
     _faceMetricsSubscription?.cancel();
+    _voiceCommandSubscription?.cancel();
+    _voiceListeningSubscription?.cancel();
     _esp32Service.dispose();
     unawaited(_faceAnalysisService.dispose());
+    unawaited(_voiceCommandService.dispose());
+    unawaited(_voiceFeedback.stop());
     unawaited(StorageService.instance.endDrivingSession());
 
     super.dispose();
@@ -565,6 +728,12 @@ class _DrivingIngPageState extends State<DrivingIngPage>
           ),
         ),
         actions: [
+          Icon(
+            _voiceListening ? Icons.mic : Icons.mic_off,
+            color: _voiceListening ? Colors.green : onSurfaceVariant,
+            size: 22,
+          ),
+          const SizedBox(width: 6),
           PopupMenuButton<bool>(
             tooltip: 'Detection mode',
             icon: Icon(
