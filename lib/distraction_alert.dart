@@ -50,7 +50,10 @@ class _DistractionAlertPageState extends State<DistractionAlertPage> {
               Container(
                 width: double.infinity,
                 color: primaryOrange,
-                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 14,
+                  horizontal: 16,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: const [
@@ -74,7 +77,8 @@ class _DistractionAlertPageState extends State<DistractionAlertPage> {
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(24, 16, 24, 20),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly, // Distribute vertical space evenly to fill the middle
+                    mainAxisAlignment: MainAxisAlignment
+                        .spaceEvenly, // Distribute vertical space evenly to fill the middle
                     children: [
                       // 2. Centre Content Area (Icon, big title, expanded Reason box)
                       Column(
@@ -85,10 +89,17 @@ class _DistractionAlertPageState extends State<DistractionAlertPage> {
                             decoration: BoxDecoration(
                               color: const Color(0xFFF2EBE3),
                               shape: BoxShape.circle,
-                              border: Border.all(color: outlineColor, width: 1.5),
+                              border: Border.all(
+                                color: outlineColor,
+                                width: 1.5,
+                              ),
                             ),
                             child: const Center(
-                              child: Icon(Icons.phonelink_off, color: Color(0xFFC2562E), size: 38),
+                              child: Icon(
+                                Icons.phonelink_off,
+                                color: Color(0xFFC2562E),
+                                size: 38,
+                              ),
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -106,9 +117,17 @@ class _DistractionAlertPageState extends State<DistractionAlertPage> {
                           // Reason box with increased font size and padding
                           Column(
                             children: [
-                              _buildReasonLine('Reason: Head Pose > 20° (Phone Usage Detected)', primaryOrange, containerBg),
+                              _buildReasonLine(
+                                'Reason: Head Pose > 20° (Phone Usage Detected)',
+                                primaryOrange,
+                                containerBg,
+                              ),
                               const SizedBox(height: 10),
-                              _buildReasonLine('Reason: Head Pose > 20° (Looking Away From Road)', primaryOrange, containerBg),
+                              _buildReasonLine(
+                                'Reason: Head Pose > 20° (Looking Away From Road)',
+                                primaryOrange,
+                                containerBg,
+                              ),
                             ],
                           ),
                         ],
@@ -130,12 +149,17 @@ class _DistractionAlertPageState extends State<DistractionAlertPage> {
                               children: const [
                                 Padding(
                                   padding: EdgeInsets.only(top: 2),
-                                  child: Icon(Icons.volume_up, color: Color(0xFFC2562E), size: 24),
+                                  child: Icon(
+                                    Icons.volume_up,
+                                    color: Color(0xFFC2562E),
+                                    size: 24,
+                                  ),
                                 ),
                                 SizedBox(width: 14),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         'VOICE ALERT ACTIVE:',
@@ -165,7 +189,10 @@ class _DistractionAlertPageState extends State<DistractionAlertPage> {
 
                           // 4. Detection Info Row
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 18,
+                              vertical: 14,
+                            ),
                             decoration: BoxDecoration(
                               color: containerBg,
                               borderRadius: BorderRadius.circular(12),
@@ -186,10 +213,15 @@ class _DistractionAlertPageState extends State<DistractionAlertPage> {
                                 DecoratedBox(
                                   decoration: BoxDecoration(
                                     color: Color(0xFFF8ECE7),
-                                    borderRadius: BorderRadius.all(Radius.circular(6)),
+                                    borderRadius: BorderRadius.all(
+                                      Radius.circular(6),
+                                    ),
                                   ),
                                   child: Padding(
-                                    padding: EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
                                     child: Text(
                                       '> 20° for 2s',
                                       style: TextStyle(
@@ -238,16 +270,22 @@ class _DistractionAlertPageState extends State<DistractionAlertPage> {
                             height: 52,
                             child: ElevatedButton(
                               onPressed: () {
-                                _flutterTts.speak("Locating nearest rest area.");
+                                _flutterTts.speak(
+                                  "Locating nearest rest area.",
+                                );
                                 ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Finding nearest R&R...')),
+                                  const SnackBar(
+                                    content: Text('Finding nearest R&R...'),
+                                  ),
                                 );
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFFEAE6DF),
                                 foregroundColor: const Color(0xFF4A443E),
                                 elevation: 0,
-                                side: const BorderSide(color: Color(0xFFD6CEBE)),
+                                side: const BorderSide(
+                                  color: Color(0xFFD6CEBE),
+                                ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -282,9 +320,7 @@ class _DistractionAlertPageState extends State<DistractionAlertPage> {
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(10),
-        border: Border(
-          left: BorderSide(color: borderColor, width: 4),
-        ),
+        border: Border(left: BorderSide(color: borderColor, width: 4)),
       ),
       child: Text(
         text,

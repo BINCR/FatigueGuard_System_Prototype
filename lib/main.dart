@@ -11,14 +11,10 @@ Future<void> main() async {
   await Hive.initFlutter();
 
   // Stores every driving session.
-  await Hive.openBox<dynamic>(
-    StorageService.sessionsBoxName,
-  );
+  await Hive.openBox<dynamic>(StorageService.sessionsBoxName);
 
   // Stores fatigue and distraction detection events.
-  await Hive.openBox<dynamic>(
-    StorageService.eventsBoxName,
-  );
+  await Hive.openBox<dynamic>(StorageService.eventsBoxName);
 
   runApp(const FatigueGuardApp());
 }

@@ -43,21 +43,34 @@ class _LoginPageState extends State<LoginPage> {
     } else if (email == 'manager@gmail.com' && password == '1234567890') {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const FleetManagerDashboardPage()),
+        MaterialPageRoute(
+          builder: (context) => const FleetManagerDashboardPage(),
+        ),
       );
     } else {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Login Failed', style: TextStyle(fontWeight: FontWeight.bold)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'Login Failed',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           content: const Text(
             'Incorrect username or password. Please try again.\n\nHint:\nDriver: rb713@gmail.com / 1234567890\nManager: manager@gmail.com / 1234567890',
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(ctx).pop(),
-              child: const Text('OK', style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+              child: const Text(
+                'OK',
+                style: TextStyle(
+                  color: primaryColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ),
           ],
         ),
@@ -72,7 +85,10 @@ class _LoginPageState extends State<LoginPage> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20.0,
+              vertical: 24.0,
+            ),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 440),
               child: Column(
@@ -105,7 +121,9 @@ class _LoginPageState extends State<LoginPage> {
                     decoration: BoxDecoration(
                       color: surfaceContainerLowest,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: outlineVariant.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: outlineVariant.withValues(alpha: 0.3),
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.04),
@@ -131,21 +149,35 @@ class _LoginPageState extends State<LoginPage> {
                         TextField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
-                          style: const TextStyle(fontSize: 16, color: onSurface),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: onSurface,
+                          ),
                           decoration: InputDecoration(
                             hintText: 'driver@gmail.com',
-                            hintStyle: TextStyle(color: onSurfaceVariant.withValues(alpha: 0.4)),
-                            prefixIcon: const Icon(Icons.mail_outline, color: onSurfaceVariant),
+                            hintStyle: TextStyle(
+                              color: onSurfaceVariant.withValues(alpha: 0.4),
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.mail_outline,
+                              color: onSurfaceVariant,
+                            ),
                             filled: true,
                             fillColor: surfaceContainerLow,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 18.0, horizontal: 16.0),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 18.0,
+                              horizontal: 16.0,
+                            ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
                               borderSide: BorderSide.none,
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: primaryColor, width: 2),
+                              borderSide: const BorderSide(
+                                color: primaryColor,
+                                width: 2,
+                              ),
                             ),
                           ),
                         ),
@@ -165,14 +197,24 @@ class _LoginPageState extends State<LoginPage> {
                         TextField(
                           controller: _passwordController,
                           obscureText: _obscurePassword,
-                          style: const TextStyle(fontSize: 16, color: onSurface),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            color: onSurface,
+                          ),
                           decoration: InputDecoration(
                             hintText: '••••••••',
-                            hintStyle: TextStyle(color: onSurfaceVariant.withValues(alpha: 0.4)),
-                            prefixIcon: const Icon(Icons.lock_outline, color: onSurfaceVariant),
+                            hintStyle: TextStyle(
+                              color: onSurfaceVariant.withValues(alpha: 0.4),
+                            ),
+                            prefixIcon: const Icon(
+                              Icons.lock_outline,
+                              color: onSurfaceVariant,
+                            ),
                             suffixIcon: IconButton(
                               icon: Icon(
-                                _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                                _obscurePassword
+                                    ? Icons.visibility_outlined
+                                    : Icons.visibility_off_outlined,
                                 color: onSurfaceVariant.withValues(alpha: 0.6),
                               ),
                               onPressed: () {
@@ -183,14 +225,23 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                             filled: true,
                             fillColor: surfaceContainerLowest,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 18.0, horizontal: 16.0),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 18.0,
+                              horizontal: 16.0,
+                            ),
                             enabledBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: primaryColor, width: 2),
+                              borderSide: const BorderSide(
+                                color: primaryColor,
+                                width: 2,
+                              ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: primaryColor, width: 2),
+                              borderSide: const BorderSide(
+                                color: primaryColor,
+                                width: 2,
+                              ),
                             ),
                           ),
                         ),
@@ -202,7 +253,10 @@ class _LoginPageState extends State<LoginPage> {
                             onTap: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => const ForgotPasswordPage()),
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const ForgotPasswordPage(),
+                                ),
                               );
                             },
                             child: const Text(
@@ -249,20 +303,32 @@ class _LoginPageState extends State<LoginPage> {
 
                         Row(
                           children: [
-                            Expanded(child: Divider(color: outlineVariant.withValues(alpha: 0.4))),
+                            Expanded(
+                              child: Divider(
+                                color: outlineVariant.withValues(alpha: 0.4),
+                              ),
+                            ),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12.0,
+                              ),
                               child: Text(
                                 'OR CONTINUE WITH',
                                 style: TextStyle(
                                   fontFamily: 'JetBrains Mono',
                                   fontSize: 12,
-                                  color: onSurfaceVariant.withValues(alpha: 0.6),
+                                  color: onSurfaceVariant.withValues(
+                                    alpha: 0.6,
+                                  ),
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ),
-                            Expanded(child: Divider(color: outlineVariant.withValues(alpha: 0.4))),
+                            Expanded(
+                              child: Divider(
+                                color: outlineVariant.withValues(alpha: 0.4),
+                              ),
+                            ),
                           ],
                         ),
                         const SizedBox(height: 20),
@@ -270,14 +336,20 @@ class _LoginPageState extends State<LoginPage> {
                         OutlinedButton(
                           onPressed: () {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Biometric authentication is not configured.')),
+                              const SnackBar(
+                                content: Text(
+                                  'Biometric authentication is not configured.',
+                                ),
+                              ),
                             );
                           },
                           style: OutlinedButton.styleFrom(
                             backgroundColor: surfaceContainerLow,
                             foregroundColor: onSurfaceVariant,
                             minimumSize: const Size(double.infinity, 56),
-                            side: BorderSide(color: outlineVariant.withValues(alpha: 0.3)),
+                            side: BorderSide(
+                              color: outlineVariant.withValues(alpha: 0.3),
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
@@ -285,11 +357,18 @@ class _LoginPageState extends State<LoginPage> {
                           child: const Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.fingerprint, size: 24, color: primaryColor),
+                              Icon(
+                                Icons.fingerprint,
+                                size: 24,
+                                color: primaryColor,
+                              ),
                               SizedBox(width: 8),
                               Text(
                                 'Sign in with Biometrics',
-                                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ],
                           ),
@@ -310,7 +389,9 @@ class _LoginPageState extends State<LoginPage> {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const SignupPage()),
+                            MaterialPageRoute(
+                              builder: (context) => const SignupPage(),
+                            ),
                           );
                         },
                         child: const Text(

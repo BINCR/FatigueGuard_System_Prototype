@@ -47,7 +47,9 @@ class _CollisionDetectPageState extends State<CollisionDetectPage> {
     _flutterTts.speak("Calling emergency services now.");
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Auto-dialing emergency services (999)...')),
+        const SnackBar(
+          content: Text('Auto-dialing emergency services (999)...'),
+        ),
       );
     }
   }
@@ -136,7 +138,9 @@ class _CollisionDetectPageState extends State<CollisionDetectPage> {
                                 value: progressValue,
                                 strokeWidth: 10,
                                 backgroundColor: errorContainer,
-                                valueColor: const AlwaysStoppedAnimation<Color>(errorColor),
+                                valueColor: const AlwaysStoppedAnimation<Color>(
+                                  errorColor,
+                                ),
                               ),
                             ),
                             Column(
@@ -196,7 +200,8 @@ class _CollisionDetectPageState extends State<CollisionDetectPage> {
                               _buildEmergencyItem(
                                 icon: Icons.call,
                                 title: 'Auto-Dial: 999 Service',
-                                subtitle: 'Connecting to dispatchers in ${_countdown}s',
+                                subtitle:
+                                    'Connecting to dispatchers in ${_countdown}s',
                               ),
                               const SizedBox(height: 12),
                               _buildEmergencyItem(
@@ -225,7 +230,11 @@ class _CollisionDetectPageState extends State<CollisionDetectPage> {
                               _flutterTts.setSpeechRate(0.5);
                               _flutterTts.speak("Calling emergency services.");
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Calling emergency services (999)...')),
+                                const SnackBar(
+                                  content: Text(
+                                    'Calling emergency services (999)...',
+                                  ),
+                                ),
                               );
                             },
                             style: ElevatedButton.styleFrom(
@@ -284,7 +293,10 @@ class _CollisionDetectPageState extends State<CollisionDetectPage> {
 
               // Footer Security Brand
               Padding(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 20,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: const [
@@ -309,7 +321,11 @@ class _CollisionDetectPageState extends State<CollisionDetectPage> {
     );
   }
 
-  Widget _buildEmergencyItem({required IconData icon, required String title, required String subtitle}) {
+  Widget _buildEmergencyItem({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+  }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

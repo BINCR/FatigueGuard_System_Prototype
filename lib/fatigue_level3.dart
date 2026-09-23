@@ -14,15 +14,16 @@ class FatigueLevel3Page extends StatefulWidget {
 
 class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
   final MapController _mapController = MapController();
-  
+
   // Kulai R&R accurate coordinates
-  final LatLng _rrLocation = const LatLng(1.6586, 103.6014); 
-  
+  final LatLng _rrLocation = const LatLng(1.6586, 103.6014);
+
   final FlutterTts _flutterTts = FlutterTts();
   int _countdown = 7;
   Timer? _timer;
   bool _isSosTriggered = false;
-  bool _isSosCancelled = false; // Flag to check if SOS has been manually cancelled by the user
+  bool _isSosCancelled =
+      false; // Flag to check if SOS has been manually cancelled by the user
 
   @override
   void initState() {
@@ -35,7 +36,9 @@ class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
     await _flutterTts.setLanguage("en-US");
     await _flutterTts.setSpeechRate(0.5);
     await _flutterTts.setPitch(1.0);
-    await _flutterTts.speak("Severe fatigue detected. Navigating to nearest rest area automatically.");
+    await _flutterTts.speak(
+      "Severe fatigue detected. Navigating to nearest rest area automatically.",
+    );
   }
 
   void _startCountdown() {
@@ -63,11 +66,15 @@ class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
       _isSosTriggered = true;
     });
     _flutterTts.setSpeechRate(0.5);
-    _flutterTts.speak("Auto SOS initiated. Notifying emergency services and contacts.");
-    
+    _flutterTts.speak(
+      "Auto SOS initiated. Notifying emergency services and contacts.",
+    );
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('AUTO-SOS TRIGGERED: Emergency services & contacts notified!'),
+        content: Text(
+          'AUTO-SOS TRIGGERED: Emergency services & contacts notified!',
+        ),
         backgroundColor: Color(0xFFBA1A1A),
         duration: Duration(seconds: 4),
       ),
@@ -77,7 +84,7 @@ class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
   // Launch the specified Google Maps short link
   Future<void> _launchGoogleMaps() async {
     final Uri googleMapsUrl = Uri.parse(
-      'https://maps.app.goo.gl/WZ3JEwNecZWQDoZi8?g_st=aw'
+      'https://maps.app.goo.gl/WZ3JEwNecZWQDoZi8?g_st=aw',
     );
 
     try {
@@ -85,15 +92,15 @@ class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
         googleMapsUrl,
         mode: LaunchMode.externalApplication,
       );
-      
+
       if (!launched) {
         throw 'Could not launch $googleMapsUrl';
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not open Google Maps: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not open Google Maps: $e')));
     }
   }
 
@@ -107,7 +114,9 @@ class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
   @override
   Widget build(BuildContext context) {
     const Color primaryRed = Color(0xFFBA1A1A);
-    const Color successGreen = Color(0xFF2E7D32); // Green color after cancellation
+    const Color successGreen = Color(
+      0xFF2E7D32,
+    ); // Green color after cancellation
     const Color errorContainer = Color(0xFFFFDAD6);
     const Color onSurface = Color(0xFF111c2d);
     const Color onSurfaceVariant = Color(0xFF464555);
@@ -128,13 +137,15 @@ class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Icon(
-                      _isSosCancelled ? Icons.check_circle : Icons.emergency, 
+                      _isSosCancelled ? Icons.check_circle : Icons.emergency,
                       color: Colors.white,
                     ),
                     Text(
-                      _isSosCancelled 
-                          ? 'SOS CANCELLED' 
-                          : (_isSosTriggered ? 'AUTO-SOS ACTIVATED' : 'AUTO-SOS IN: ${_countdown}s'),
+                      _isSosCancelled
+                          ? 'SOS CANCELLED'
+                          : (_isSosTriggered
+                                ? 'AUTO-SOS ACTIVATED'
+                                : 'AUTO-SOS IN: ${_countdown}s'),
                       style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -147,7 +158,7 @@ class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
                           _timer?.cancel();
                           _flutterTts.setSpeechRate(0.5);
                           _flutterTts.speak("SOS cancelled.");
-                          
+
                           // Switch state, stay on current page, do not call Navigator.pop(context)
                           setState(() {
                             _isSosCancelled = true;
@@ -156,7 +167,9 @@ class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
 
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('🛡️ SOS has been cancelled. You remain on this page.'),
+                              content: Text(
+                                '🛡️ SOS has been cancelled. You remain on this page.',
+                              ),
                               backgroundColor: Colors.black87,
                               duration: Duration(seconds: 2),
                             ),
@@ -167,20 +180,34 @@ class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
                           foregroundColor: primaryRed,
                           shape: const StadiumBorder(),
                         ),
-                        child: const Text('CANCEL SOS', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                        child: const Text(
+                          'CANCEL SOS',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
                       )
                     else
                       const Text(
                         'Safe',
-                        style: TextStyle(color: Colors.white70, fontStyle: FontStyle.italic),
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: Colors.grey.shade300)),
+                  border: Border(
+                    bottom: BorderSide(color: Colors.grey.shade300),
+                  ),
                 ),
                 child: Row(
                   children: const [
@@ -188,7 +215,12 @@ class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
                     SizedBox(width: 8),
                     Text(
                       'LIVE MAP NAVIGATION VIEW',
-                      style: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 10, letterSpacing: 1.0, color: onSurfaceVariant),
+                      style: TextStyle(
+                        fontFamily: 'JetBrains Mono',
+                        fontSize: 10,
+                        letterSpacing: 1.0,
+                        color: onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -205,7 +237,8 @@ class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
                       ),
                       children: [
                         TileLayer(
-                          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                          urlTemplate:
+                              'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                           userAgentPackageName: 'com.example.fatigue_guard',
                         ),
                         MarkerLayer(
@@ -218,10 +251,17 @@ class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
                                 decoration: BoxDecoration(
                                   color: primaryRed,
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.white, width: 2),
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 2,
+                                  ),
                                 ),
                                 child: const Center(
-                                  child: Icon(Icons.coffee, color: Colors.white, size: 16),
+                                  child: Icon(
+                                    Icons.coffee,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
                                 ),
                               ),
                             ),
@@ -240,8 +280,20 @@ class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border(left: BorderSide(color: _isSosCancelled ? successGreen : primaryRed, width: 6)),
-                              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 15)],
+                              border: Border(
+                                left: BorderSide(
+                                  color: _isSosCancelled
+                                      ? successGreen
+                                      : primaryRed,
+                                  width: 6,
+                                ),
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.1),
+                                  blurRadius: 15,
+                                ),
+                              ],
                             ),
                             child: Row(
                               children: [
@@ -252,21 +304,57 @@ class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
                                     color: errorContainer,
                                     shape: BoxShape.circle,
                                   ),
-                                  child: const Icon(Icons.location_on, color: primaryRed, size: 28),
+                                  child: const Icon(
+                                    Icons.location_on,
+                                    color: primaryRed,
+                                    size: 28,
+                                  ),
                                 ),
                                 const SizedBox(width: 16),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
-                                      const Text('NEAREST REST AREA DETECTED:', style: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 10, color: onSurfaceVariant)),
-                                      const Text('Kulai R&R (Northbound)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: onSurface)),
+                                      const Text(
+                                        'NEAREST REST AREA DETECTED:',
+                                        style: TextStyle(
+                                          fontFamily: 'JetBrains Mono',
+                                          fontSize: 10,
+                                          color: onSurfaceVariant,
+                                        ),
+                                      ),
+                                      const Text(
+                                        'Kulai R&R (Northbound)',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.bold,
+                                          color: onSurface,
+                                        ),
+                                      ),
                                       const SizedBox(height: 4),
                                       Row(
                                         children: const [
-                                          Text('4 mins', style: TextStyle(fontWeight: FontWeight.bold, color: primaryRed)),
-                                          Text(' • ', style: TextStyle(color: onSurfaceVariant)),
-                                          Text('3.2km', style: TextStyle(fontWeight: FontWeight.bold, color: primaryRed)),
+                                          Text(
+                                            '4 mins',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: primaryRed,
+                                            ),
+                                          ),
+                                          Text(
+                                            ' • ',
+                                            style: TextStyle(
+                                              color: onSurfaceVariant,
+                                            ),
+                                          ),
+                                          Text(
+                                            '3.2km',
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.bold,
+                                              color: primaryRed,
+                                            ),
+                                          ),
                                         ],
                                       ),
                                     ],
@@ -284,7 +372,7 @@ class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
                                 _timer?.cancel();
                                 _flutterTts.setSpeechRate(0.5);
                                 _flutterTts.speak("Navigation started.");
-                                
+
                                 // Trigger launch of specified Google Maps short link
                                 _launchGoogleMaps();
                               },
@@ -295,7 +383,14 @@ class _FatigueLevel3PageState extends State<FatigueLevel3Page> {
                                 elevation: 6,
                               ),
                               icon: const Icon(Icons.directions),
-                              label: const Text('Start Navigation', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                              label: const Text(
+                                'Start Navigation',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
                             ),
                           ),
                         ],

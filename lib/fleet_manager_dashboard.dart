@@ -15,7 +15,7 @@ class FleetManagerDashboardPage extends StatefulWidget {
 
 class _FleetManagerDashboardPageState extends State<FleetManagerDashboardPage> {
   String _activeTab = 'heatmap';
-  
+
   final MapController _mapController = MapController();
   double _currentZoom = 13.0;
 
@@ -89,7 +89,9 @@ class _FleetManagerDashboardPageState extends State<FleetManagerDashboardPage> {
                   onPressed: () {
                     Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (context) => const LoginPage()),
+                      MaterialPageRoute(
+                        builder: (context) => const LoginPage(),
+                      ),
                     );
                   },
                   style: ElevatedButton.styleFrom(
@@ -150,7 +152,10 @@ class _FleetManagerDashboardPageState extends State<FleetManagerDashboardPage> {
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: _activeTab == 'heatmap'
                       ? primaryContainer
@@ -193,7 +198,10 @@ class _FleetManagerDashboardPageState extends State<FleetManagerDashboardPage> {
                 );
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(9999),
                 ),
@@ -430,7 +438,7 @@ class _FleetManagerDashboardPageState extends State<FleetManagerDashboardPage> {
   }
 
   Widget _buildHeatmapView() {
-    final LatLng defaultLocation = LatLng(1.4927, 103.7414); 
+    final LatLng defaultLocation = LatLng(1.4927, 103.7414);
 
     return Column(
       children: [
@@ -459,7 +467,8 @@ class _FleetManagerDashboardPageState extends State<FleetManagerDashboardPage> {
                   ),
                   children: [
                     TileLayer(
-                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      urlTemplate:
+                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                       userAgentPackageName: 'com.example.fatigue_guard',
                     ),
                     MarkerLayer(
@@ -474,7 +483,10 @@ class _FleetManagerDashboardPageState extends State<FleetManagerDashboardPage> {
                           point: LatLng(1.4900, 103.7380),
                           width: 40,
                           height: 40,
-                          child: _buildVehicleMarker('V2', Colors.amber.shade700),
+                          child: _buildVehicleMarker(
+                            'V2',
+                            Colors.amber.shade700,
+                          ),
                         ),
                         Marker(
                           point: LatLng(1.4880, 103.7460),
@@ -490,11 +502,16 @@ class _FleetManagerDashboardPageState extends State<FleetManagerDashboardPage> {
                   top: 10,
                   left: 10,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withValues(alpha: 0.85),
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: outlineVariant.withValues(alpha: 0.5)),
+                      border: Border.all(
+                        color: outlineVariant.withValues(alpha: 0.5),
+                      ),
                     ),
                     child: const Text(
                       'Leaflet Live Map Active',
@@ -515,14 +532,20 @@ class _FleetManagerDashboardPageState extends State<FleetManagerDashboardPage> {
                       _buildMapButton(Icons.add, () {
                         setState(() {
                           if (_currentZoom < 18.0) _currentZoom += 1;
-                          _mapController.move(_mapController.camera.center, _currentZoom);
+                          _mapController.move(
+                            _mapController.camera.center,
+                            _currentZoom,
+                          );
                         });
                       }),
                       const SizedBox(height: 6),
                       _buildMapButton(Icons.remove, () {
                         setState(() {
                           if (_currentZoom > 3.0) _currentZoom -= 1;
-                          _mapController.move(_mapController.camera.center, _currentZoom);
+                          _mapController.move(
+                            _mapController.camera.center,
+                            _currentZoom,
+                          );
                         });
                       }),
                     ],
@@ -608,10 +631,7 @@ class _FleetManagerDashboardPageState extends State<FleetManagerDashboardPage> {
         Container(
           width: 8,
           height: 8,
-          decoration: BoxDecoration(
-            color: dotColor,
-            shape: BoxShape.circle,
-          ),
+          decoration: BoxDecoration(color: dotColor, shape: BoxShape.circle),
         ),
         const SizedBox(width: 5),
         Text(
@@ -835,7 +855,11 @@ class _FleetManagerDashboardPageState extends State<FleetManagerDashboardPage> {
                   ),
                 ),
                 const SizedBox(width: 4),
-                const Icon(Icons.chevron_right, color: outlineVariant, size: 20),
+                const Icon(
+                  Icons.chevron_right,
+                  color: outlineVariant,
+                  size: 20,
+                ),
               ],
             ),
           ],

@@ -97,7 +97,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20.0,
+              vertical: 24.0,
+            ),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 440),
               child: Column(
@@ -170,7 +173,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                                 boxShadow: _selectedMethod == 'email'
                                     ? [
                                         BoxShadow(
-                                          color: Colors.black.withValues(alpha: 0.06),
+                                          color: Colors.black.withValues(
+                                            alpha: 0.06,
+                                          ),
                                           blurRadius: 4,
                                           offset: const Offset(0, 2),
                                         ),
@@ -210,7 +215,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                                 boxShadow: _selectedMethod == 'phone'
                                     ? [
                                         BoxShadow(
-                                          color: Colors.black.withValues(alpha: 0.06),
+                                          color: Colors.black.withValues(
+                                            alpha: 0.06,
+                                          ),
                                           blurRadius: 4,
                                           offset: const Offset(0, 2),
                                         ),
@@ -279,7 +286,9 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
                       onTap: () {
                         Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(builder: (context) => const LoginPage()),
+                          MaterialPageRoute(
+                            builder: (context) => const LoginPage(),
+                          ),
                         );
                       },
                       child: const Row(
@@ -340,7 +349,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           ),
           const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 4.0,
+            ),
             decoration: BoxDecoration(
               color: surfaceColor,
               borderRadius: BorderRadius.circular(10),
@@ -400,7 +412,10 @@ class _ForgotPasswordPageState extends State<ForgotPasswordPage> {
           ),
           const SizedBox(height: 8),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 4.0,
+            ),
             decoration: BoxDecoration(
               color: surfaceColor,
               borderRadius: BorderRadius.circular(10),

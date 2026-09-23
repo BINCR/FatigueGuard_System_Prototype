@@ -43,25 +43,30 @@ class _DrivingIngPageState extends State<DrivingIngPage>
   bool _faceDetected = false;
   double _ear = 0;
   double _mar = 0;
-  int _blinkRate = 0;
+  double _eyeOpenProbability = -1;
+  double _perclos = 0;
+  double _faceAlertness = 0;
+  bool _faceFatigueDetected = false;
+  String _fatigueReason = 'Waiting for face data';
   String _headPosition = 'Waiting';
 
   bool _alertPageOpen = false;
   int _fatigueAlertLevel = 0;
   DateTime? _lastAlertClosedAt;
+  Timer? _testNotificationTimer;
+  String? _testNotification;
+  Color _testNotificationColor = Colors.orange;
+  int _testEventCount = 0;
+  bool _fatigueEpisodeActive = false;
+  bool _distractedEpisodeActive = false;
+
+  // Testing build: detections stay on this page and never open warning pages.
+  static const bool _testingMode = true;
 
   // Real ESP32 is the default. The user can switch to Demo from the app bar.
   bool _useMockData = false;
 
-  final List<bool> _recentDrowsyDetections = <bool>[];
   int _consecutiveDistractedDetections = 0;
-
-  // The ESP32 test showed that closed eyes are usually classified as drowsy
-  // between 60% and 93%, with an occasional normal/uncertain frame in between.
-  // Use a rolling vote so one unstable frame does not cancel a real warning.
-  static const double _drowsyAlertConfidence = 0.60;
-  static const int _drowsyWindowSize = 5;
-  static const int _requiredDrowsyVotes = 3;
 
   // Distracted detection was much more stable, so keep its stricter rule.
   static const double _distractedAlertConfidence = 0.80;
@@ -118,9 +123,15 @@ class _DrivingIngPageState extends State<DrivingIngPage>
         _faceDetected = metrics.faceDetected;
         _ear = metrics.ear;
         _mar = metrics.mar;
-        _blinkRate = metrics.blinkRate;
+        _eyeOpenProbability = metrics.eyeOpenProbability;
+        _perclos = metrics.perclos;
+        _faceAlertness = metrics.alertness;
+        _faceFatigueDetected = metrics.fatigueDetected;
+        _fatigueReason = metrics.fatigueReason;
         _headPosition = metrics.headPosition;
       });
+
+      unawaited(_handleFaceMetrics(metrics));
     });
 
     _esp32Service.start(mockMode: _useMockData);
@@ -131,6 +142,7 @@ class _DrivingIngPageState extends State<DrivingIngPage>
   void dispose() {
     profileData.removeListener(_onProfileChanged);
     _timer?.cancel();
+    _testNotificationTimer?.cancel();
     _detectionSubscription?.cancel();
     _connectionSubscription?.cancel();
     _faceMetricsSubscription?.cancel();
@@ -188,7 +200,6 @@ class _DrivingIngPageState extends State<DrivingIngPage>
       _esp32Connected = false;
       _currentLabel = 'waiting';
       _currentConfidence = 0.0;
-      _recentDrowsyDetections.clear();
       _consecutiveDistractedDetections = 0;
     });
 
@@ -206,6 +217,10 @@ class _DrivingIngPageState extends State<DrivingIngPage>
   }
 
   double get _alertnessScore {
+    if (_faceDetected) {
+      return _faceAlertness;
+    }
+
     switch (_currentLabel) {
       case 'normal':
         return _currentConfidence.clamp(0.0, 1.0).toDouble();
@@ -217,7 +232,79 @@ class _DrivingIngPageState extends State<DrivingIngPage>
     }
   }
 
+  Future<void> _handleFaceMetrics(FaceMetrics metrics) async {
+    if (!metrics.fatigueDetected) {
+      _fatigueEpisodeActive = false;
+      return;
+    }
+
+    if (!mounted || _isPaused || _alertPageOpen || _fatigueEpisodeActive) {
+      return;
+    }
+
+    final DateTime now = DateTime.now();
+    if (_lastAlertClosedAt != null &&
+        now.difference(_lastAlertClosedAt!) < _alertCooldown) {
+      return;
+    }
+
+    _fatigueEpisodeActive = true;
+    _fatigueAlertLevel = (_fatigueAlertLevel % 3) + 1;
+
+    if (_testingMode) {
+      _lastAlertClosedAt = now;
+      await StorageService.instance.saveDetectionEvent(
+        label: 'drowsy',
+        confidence: (1.0 - metrics.alertness).clamp(0.0, 1.0),
+        alertLevel: _fatigueAlertLevel,
+      );
+
+      if (mounted) {
+        final bool isYawn = metrics.fatigueReason.toLowerCase().contains(
+          'yawn',
+        );
+        _showTestNotification(
+          isYawn
+              ? 'YAWNING DETECTED: ${metrics.fatigueReason}'
+              : 'FATIGUE DETECTED: ${metrics.fatigueReason}',
+          errorColor,
+        );
+      }
+      return;
+    }
+
+    final Widget alertPage = switch (_fatigueAlertLevel) {
+      1 => const FatigueLevel1Page(),
+      2 => const FatigueLevel2Page(),
+      _ => const FatigueLevel3Page(),
+    };
+
+    _alertPageOpen = true;
+    await StorageService.instance.saveDetectionEvent(
+      label: 'drowsy',
+      confidence: (1.0 - metrics.alertness).clamp(0.0, 1.0),
+      alertLevel: _fatigueAlertLevel,
+    );
+
+    if (!mounted) return;
+
+    try {
+      await Navigator.of(
+        context,
+      ).push<void>(MaterialPageRoute<void>(builder: (_) => alertPage));
+    } finally {
+      if (mounted) {
+        _alertPageOpen = false;
+        _lastAlertClosedAt = DateTime.now();
+      }
+    }
+  }
+
   Future<void> _handleDetectionResult(DetectionResult result) async {
+    if (result.label != 'distracted') {
+      _distractedEpisodeActive = false;
+    }
+
     if (!mounted || _isPaused || _alertPageOpen) {
       return;
     }
@@ -229,15 +316,6 @@ class _DrivingIngPageState extends State<DrivingIngPage>
       return;
     }
 
-    final bool isDrowsyVote =
-        result.label == 'drowsy' && result.confidence >= _drowsyAlertConfidence;
-
-    _recentDrowsyDetections.add(isDrowsyVote);
-
-    if (_recentDrowsyDetections.length > _drowsyWindowSize) {
-      _recentDrowsyDetections.removeAt(0);
-    }
-
     if (result.label == 'distracted' &&
         result.confidence >= _distractedAlertConfidence) {
       _consecutiveDistractedDetections++;
@@ -245,24 +323,40 @@ class _DrivingIngPageState extends State<DrivingIngPage>
       _consecutiveDistractedDetections = 0;
     }
 
-    final int drowsyVotes = _recentDrowsyDetections
-        .where((bool detected) => detected)
-        .length;
-
-    final bool shouldAlertDrowsy =
-        isDrowsyVote && drowsyVotes >= _requiredDrowsyVotes;
     final bool shouldAlertDistracted =
         _consecutiveDistractedDetections >=
         _requiredConsecutiveDistractedDetections;
 
-    if (!shouldAlertDrowsy && !shouldAlertDistracted) {
+    if (!shouldAlertDistracted) {
       return;
     }
 
-    final String alertLabel = shouldAlertDrowsy ? 'drowsy' : 'distracted';
+    if (_distractedEpisodeActive) {
+      return;
+    }
 
-    _recentDrowsyDetections.clear();
+    _distractedEpisodeActive = true;
+
+    const String alertLabel = 'distracted';
+
     _consecutiveDistractedDetections = 0;
+
+    if (_testingMode) {
+      _lastAlertClosedAt = now;
+      await StorageService.instance.saveDetectionEvent(
+        label: alertLabel,
+        confidence: result.confidence,
+        alertLevel: 1,
+      );
+
+      if (mounted) {
+        _showTestNotification(
+          'DISTRACTION DETECTED: ${(result.confidence * 100).round()}%',
+          Colors.deepOrange,
+        );
+      }
+      return;
+    }
 
     Widget? alertPage;
 
@@ -321,6 +415,23 @@ class _DrivingIngPageState extends State<DrivingIngPage>
         _lastAlertClosedAt = DateTime.now();
       }
     }
+  }
+
+  void _showTestNotification(String message, Color color) {
+    _testNotificationTimer?.cancel();
+
+    setState(() {
+      _testEventCount++;
+      _testNotification = message;
+      _testNotificationColor = color;
+    });
+
+    _testNotificationTimer = Timer(const Duration(seconds: 3), () {
+      if (!mounted) return;
+      setState(() {
+        _testNotification = null;
+      });
+    });
   }
 
   Future<void> _endSessionAndOpen(Widget page) async {
@@ -522,6 +633,78 @@ class _DrivingIngPageState extends State<DrivingIngPage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE8EAF6),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: primaryColor),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.science, color: primaryColor),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'TESTING MODE · Warning pages disabled',
+                          style: TextStyle(
+                            fontFamily: 'Manrope',
+                            fontWeight: FontWeight.bold,
+                            color: primaryColor,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        'Events $_testEventCount',
+                        style: const TextStyle(
+                          fontFamily: 'JetBrains Mono',
+                          fontSize: 11,
+                          color: primaryColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 250),
+                  child: _testNotification == null
+                      ? const SizedBox.shrink()
+                      : Container(
+                          key: ValueKey<String>(_testNotification!),
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: _testNotificationColor.withValues(
+                              alpha: 0.12,
+                            ),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: _testNotificationColor),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.notifications_active,
+                                color: _testNotificationColor,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  _testNotification!,
+                                  style: TextStyle(
+                                    fontFamily: 'Manrope',
+                                    fontWeight: FontWeight.bold,
+                                    color: _testNotificationColor,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                ),
+                if (_testNotification != null) const SizedBox(height: 10),
                 Center(
                   child: Column(
                     children: [
@@ -706,7 +889,7 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                             ),
                             const SizedBox(height: 12),
                             const Text(
-                              'BLINK RATE',
+                              'PERCLOS (30 SEC)',
                               style: TextStyle(
                                 fontFamily: 'JetBrains Mono',
                                 fontSize: 11,
@@ -717,7 +900,9 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                             const SizedBox(height: 2),
                             RichText(
                               text: TextSpan(
-                                text: _faceDetected ? '$_blinkRate' : '--',
+                                text: _faceDetected
+                                    ? '${(_perclos * 100).round()}'
+                                    : '--',
                                 style: const TextStyle(
                                   fontFamily: 'Manrope',
                                   fontSize: 22,
@@ -726,7 +911,7 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                                 ),
                                 children: const [
                                   TextSpan(
-                                    text: ' /min',
+                                    text: '%',
                                     style: TextStyle(
                                       fontSize: 13,
                                       fontWeight: FontWeight.normal,
@@ -862,6 +1047,19 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                                 ],
                               ),
                             ),
+                            if (_faceDetected) ...[
+                              const SizedBox(height: 3),
+                              Text(
+                                _eyeOpenProbability >= 0
+                                    ? 'EYE OPEN ${_eyeOpenProbability.toStringAsFixed(3)}'
+                                    : 'EYE OPEN unavailable',
+                                style: const TextStyle(
+                                  fontFamily: 'JetBrains Mono',
+                                  fontSize: 11,
+                                  color: onSurfaceVariant,
+                                ),
+                              ),
+                            ],
                           ],
                         ),
                       ),
@@ -890,38 +1088,72 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE8F5E9),
+                    color: !_faceDetected
+                        ? const Color(0xFFFFF8E1)
+                        : _faceFatigueDetected
+                        ? const Color(0xFFFFEBEE)
+                        : const Color(0xFFE8F5E9),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFA5D6A7)),
+                    border: Border.all(
+                      color: !_faceDetected
+                          ? const Color(0xFFFFD54F)
+                          : _faceFatigueDetected
+                          ? const Color(0xFFEF9A9A)
+                          : const Color(0xFFA5D6A7),
+                    ),
                   ),
-                  child: const Row(
+                  child: Row(
                     children: [
                       Icon(
-                        Icons.check_circle,
-                        color: Color(0xFF4CAF50),
+                        !_faceDetected
+                            ? Icons.face_retouching_off
+                            : _faceFatigueDetected
+                            ? Icons.warning_rounded
+                            : Icons.check_circle,
+                        color: !_faceDetected
+                            ? const Color(0xFFF9A825)
+                            : _faceFatigueDetected
+                            ? errorColor
+                            : const Color(0xFF4CAF50),
                         size: 32,
                       ),
-                      SizedBox(width: 14),
+                      const SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'No fatigue detected.',
+                              !_faceDetected
+                                  ? 'No face detected.'
+                                  : _faceFatigueDetected
+                                  ? _fatigueReason.toLowerCase().contains(
+                                          'yawn',
+                                        )
+                                        ? 'Yawning detected!'
+                                        : 'Fatigue warning!'
+                                  : 'No fatigue detected.',
                               style: TextStyle(
                                 fontFamily: 'Manrope',
                                 fontSize: 15,
                                 fontWeight: FontWeight.bold,
-                                color: Color(0xFF1B5E20),
+                                color: _faceFatigueDetected
+                                    ? errorColor
+                                    : const Color(0xFF1B5E20),
                               ),
                             ),
-                            SizedBox(height: 2),
+                            const SizedBox(height: 2),
                             Text(
-                              'Stay alert and enjoy your drive.',
+                              !_faceDetected
+                                  ? 'Please keep your face visible to the camera.'
+                                  : _faceFatigueDetected
+                                  ? _fatigueReason
+                                  : 'EAR/MAR monitoring is active.',
                               style: TextStyle(
                                 fontFamily: 'Manrope',
                                 fontSize: 13,
-                                color: Color(0xFF2E7D32),
+                                color: _faceFatigueDetected
+                                    ? errorColor
+                                    : const Color(0xFF2E7D32),
                               ),
                             ),
                           ],

@@ -4,8 +4,8 @@ import 'fleet_manager_driver_detail.dart';
 class FleetDriverItem {
   final String id;
   final String name;
-  final String vehicleId; 
-  final String riskLevel; 
+  final String vehicleId;
+  final String riskLevel;
   final int score;
   final String statusText;
 
@@ -83,7 +83,8 @@ class _DriverSelectPageState extends State<DriverSelectPage> {
   List<FleetDriverItem> get _filteredDrivers {
     return _drivers.where((d) {
       final q = _query.trim().toLowerCase();
-      final matchesQuery = q.isEmpty ||
+      final matchesQuery =
+          q.isEmpty ||
           d.name.toLowerCase().contains(q) ||
           d.id.toLowerCase().contains(q) ||
           d.vehicleId.toLowerCase().contains(q);
@@ -95,11 +96,23 @@ class _DriverSelectPageState extends State<DriverSelectPage> {
   ({Color bg, Color fg, String label}) _riskStyle(String riskLevel) {
     switch (riskLevel) {
       case 'at_risk':
-        return (bg: const Color(0xFFFEF3C7), fg: const Color(0xFF92400E), label: 'AT RISK');
+        return (
+          bg: const Color(0xFFFEF3C7),
+          fg: const Color(0xFF92400E),
+          label: 'AT RISK',
+        );
       case 'warning':
-        return (bg: const Color(0xFFFFE4D6), fg: const Color(0xFFB45309), label: 'WARNING');
+        return (
+          bg: const Color(0xFFFFE4D6),
+          fg: const Color(0xFFB45309),
+          label: 'WARNING',
+        );
       default:
-        return (bg: const Color(0xFFD1FAE5), fg: const Color(0xFF065F46), label: 'SAFE');
+        return (
+          bg: const Color(0xFFD1FAE5),
+          fg: const Color(0xFF065F46),
+          label: 'SAFE',
+        );
     }
   }
 
@@ -197,7 +210,10 @@ class _DriverSelectPageState extends State<DriverSelectPage> {
               backgroundColor: primaryContainer.withValues(alpha: 0.15),
               child: Text(
                 driver.name.isNotEmpty ? driver.name[0] : '?',
-                style: const TextStyle(fontWeight: FontWeight.bold, color: primaryContainer),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: primaryContainer,
+                ),
               ),
             ),
             const SizedBox(width: 12),
@@ -205,8 +221,20 @@ class _DriverSelectPageState extends State<DriverSelectPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(driver.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                  Text('${driver.id} • Truck ${driver.vehicleId}', style: const TextStyle(fontSize: 11, color: onSurfaceVariant)),
+                  Text(
+                    driver.name,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                  Text(
+                    '${driver.id} • Truck ${driver.vehicleId}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: onSurfaceVariant,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -214,12 +242,32 @@ class _DriverSelectPageState extends State<DriverSelectPage> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(color: style.bg, borderRadius: BorderRadius.circular(9999)),
-                  child: Text(style.label, style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: style.fg)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
+                  decoration: BoxDecoration(
+                    color: style.bg,
+                    borderRadius: BorderRadius.circular(9999),
+                  ),
+                  child: Text(
+                    style.label,
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      color: style.fg,
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 4),
-                Text('${driver.score} pts', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: primaryColor)),
+                Text(
+                  '${driver.score} pts',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: primaryColor,
+                  ),
+                ),
               ],
             ),
             const SizedBox(width: 4),

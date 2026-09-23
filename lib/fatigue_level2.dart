@@ -12,7 +12,10 @@ class FatigueLevel2Page extends StatefulWidget {
 
 class _FatigueLevel2PageState extends State<FatigueLevel2Page> {
   final MapController _mapController = MapController();
-  final LatLng _rrLocation = const LatLng(2.3020, 103.3245); // Simulated nearest rest area coordinates
+  final LatLng _rrLocation = const LatLng(
+    2.3020,
+    103.3245,
+  ); // Simulated nearest rest area coordinates
   final FlutterTts _flutterTts = FlutterTts();
 
   @override
@@ -26,7 +29,9 @@ class _FatigueLevel2PageState extends State<FatigueLevel2Page> {
     await _flutterTts.setSpeechRate(0.5); // Moderate and clear speech rate
     await _flutterTts.setPitch(1.0);
     // Trigger critical voice warning
-    await _flutterTts.speak("Severe fatigue detected. Pull over immediately. Navigating now!");
+    await _flutterTts.speak(
+      "Severe fatigue detected. Pull over immediately. Navigating now!",
+    );
   }
 
   @override
@@ -91,13 +96,24 @@ class _FatigueLevel2PageState extends State<FatigueLevel2Page> {
                                   decoration: BoxDecoration(
                                     color: dangerRed,
                                     shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.white, width: 4),
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 4,
+                                    ),
                                     boxShadow: [
-                                      BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 16),
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.2,
+                                        ),
+                                        blurRadius: 16,
+                                      ),
                                     ],
                                   ),
                                   child: const Center(
-                                    child: Text('🛑', style: TextStyle(fontSize: 64)),
+                                    child: Text(
+                                      '🛑',
+                                      style: TextStyle(fontSize: 64),
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(height: 16),
@@ -112,7 +128,10 @@ class _FatigueLevel2PageState extends State<FatigueLevel2Page> {
                                 ),
                                 const SizedBox(height: 8),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withValues(alpha: 0.8),
                                     borderRadius: BorderRadius.circular(9999),
@@ -151,8 +170,10 @@ class _FatigueLevel2PageState extends State<FatigueLevel2Page> {
                                       ),
                                       children: [
                                         TileLayer(
-                                          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                                          userAgentPackageName: 'com.example.fatigue_guard',
+                                          urlTemplate:
+                                              'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                          userAgentPackageName:
+                                              'com.example.fatigue_guard',
                                         ),
                                         MarkerLayer(
                                           markers: [
@@ -164,10 +185,17 @@ class _FatigueLevel2PageState extends State<FatigueLevel2Page> {
                                                 decoration: BoxDecoration(
                                                   color: dangerRed,
                                                   shape: BoxShape.circle,
-                                                  border: Border.all(color: Colors.white, width: 2),
+                                                  border: Border.all(
+                                                    color: Colors.white,
+                                                    width: 2,
+                                                  ),
                                                 ),
                                                 child: const Center(
-                                                  child: Icon(Icons.local_gas_station, color: Colors.white, size: 16),
+                                                  child: Icon(
+                                                    Icons.local_gas_station,
+                                                    color: Colors.white,
+                                                    size: 16,
+                                                  ),
                                                 ),
                                               ),
                                             ),
@@ -179,18 +207,41 @@ class _FatigueLevel2PageState extends State<FatigueLevel2Page> {
                                       top: 12,
                                       left: 12,
                                       child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 12,
+                                          vertical: 8,
+                                        ),
                                         decoration: BoxDecoration(
                                           color: Colors.white,
-                                          borderRadius: BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                           border: Border.all(color: dangerRed),
-                                          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 6)],
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withValues(
+                                                alpha: 0.1,
+                                              ),
+                                              blurRadius: 6,
+                                            ),
+                                          ],
                                         ),
                                         child: Row(
                                           children: const [
-                                            Icon(Icons.near_me, color: dangerRed, size: 18),
+                                            Icon(
+                                              Icons.near_me,
+                                              color: dangerRed,
+                                              size: 18,
+                                            ),
                                             SizedBox(width: 6),
-                                            Text('Recalculating to R&R...', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.black87)),
+                                            Text(
+                                              'Recalculating to R&R...',
+                                              style: TextStyle(
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 13,
+                                                color: Colors.black87,
+                                              ),
+                                            ),
                                           ],
                                         ),
                                       ),
@@ -208,31 +259,50 @@ class _FatigueLevel2PageState extends State<FatigueLevel2Page> {
                               decoration: BoxDecoration(
                                 color: dangerRed,
                                 borderRadius: BorderRadius.circular(16),
-                                boxShadow: [BoxShadow(color: dangerRed.withValues(alpha: 0.4), blurRadius: 20)],
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: dangerRed.withValues(alpha: 0.4),
+                                    blurRadius: 20,
+                                  ),
+                                ],
                               ),
                               child: Row(
                                 children: [
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: Colors.white.withValues(alpha: 0.2),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.2,
+                                      ),
                                       shape: BoxShape.circle,
                                     ),
-                                    child: const Icon(Icons.campaign, color: Colors.white, size: 32),
+                                    child: const Icon(
+                                      Icons.campaign,
+                                      color: Colors.white,
+                                      size: 32,
+                                    ),
                                   ),
                                   const SizedBox(width: 16),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: const [
                                         Text(
                                           'ALARM ACTIVE',
-                                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
+                                          style: TextStyle(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.w800,
+                                            color: Colors.white,
+                                          ),
                                         ),
                                         SizedBox(height: 2),
                                         Text(
                                           'PULL OVER IMMEDIATELY! NAVIGATING NOW.',
-                                          style: TextStyle(color: Colors.white, fontSize: 14),
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 14,
+                                          ),
                                         ),
                                       ],
                                     ),
@@ -248,18 +318,29 @@ class _FatigueLevel2PageState extends State<FatigueLevel2Page> {
                               height: 64,
                               child: ElevatedButton.icon(
                                 onPressed: () {
-                                  _flutterTts.speak("Starting navigation to the nearest rest area.");
+                                  _flutterTts.speak(
+                                    "Starting navigation to the nearest rest area.",
+                                  );
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('Starting navigation to R&R...')),
+                                    const SnackBar(
+                                      content: Text(
+                                        'Starting navigation to R&R...',
+                                      ),
+                                    ),
                                   );
                                 },
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: dangerRed,
                                   foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
                                 ),
                                 icon: const Icon(Icons.directions_car),
-                                label: const Text('NAVIGATE TO NEAREST R&R NOW', style: TextStyle(fontWeight: FontWeight.w800)),
+                                label: const Text(
+                                  'NAVIGATE TO NEAREST R&R NOW',
+                                  style: TextStyle(fontWeight: FontWeight.w800),
+                                ),
                               ),
                             ),
                             const SizedBox(height: 12),
@@ -270,15 +351,25 @@ class _FatigueLevel2PageState extends State<FatigueLevel2Page> {
                               height: 56,
                               child: OutlinedButton.icon(
                                 onPressed: () {
-                                  _flutterTts.speak("Calling emergency contacts and services.");
+                                  _flutterTts.speak(
+                                    "Calling emergency contacts and services.",
+                                  );
                                 },
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: dangerRed,
-                                  side: const BorderSide(color: dangerRed, width: 2),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                  side: const BorderSide(
+                                    color: dangerRed,
+                                    width: 2,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
                                 ),
                                 icon: const Icon(Icons.sos),
-                                label: const Text('EMERGENCY SOS / CALL HELP', style: TextStyle(fontWeight: FontWeight.bold)),
+                                label: const Text(
+                                  'EMERGENCY SOS / CALL HELP',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
                               ),
                             ),
                             const SizedBox(height: 8),
@@ -286,7 +377,14 @@ class _FatigueLevel2PageState extends State<FatigueLevel2Page> {
                             // Dismiss/Close button
                             TextButton(
                               onPressed: () => Navigator.pop(context),
-                              child: const Text('DISMISS (STAY ALERT)', style: TextStyle(fontFamily: 'JetBrains Mono', color: onSurfaceVariant, fontWeight: FontWeight.bold)),
+                              child: const Text(
+                                'DISMISS (STAY ALERT)',
+                                style: TextStyle(
+                                  fontFamily: 'JetBrains Mono',
+                                  color: onSurfaceVariant,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ),
                           ],
                         ),
@@ -300,7 +398,10 @@ class _FatigueLevel2PageState extends State<FatigueLevel2Page> {
             IgnorePointer(
               child: Container(
                 decoration: BoxDecoration(
-                  border: Border.all(color: dangerRed.withValues(alpha: 0.3), width: 12),
+                  border: Border.all(
+                    color: dangerRed.withValues(alpha: 0.3),
+                    width: 12,
+                  ),
                 ),
               ),
             ),

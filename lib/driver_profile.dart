@@ -16,17 +16,13 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
   String _driverEmail = 'rongbin@email.com';
   String _driverPhone = '+6 0123456789';
   String _licenseExpiry = 'Oct 2026';
-  
+
   String _vehicleModel = 'Hino 300 Series';
   String _vehiclePlate = 'WXX 1234';
   String _lastMaintenance = '12 Jan 2024';
 
   final List<Map<String, String>> _emergencyContacts = [
-    {
-      'name': 'Lim Yan (Spouse)',
-      'phone': '+6 019 887 2233',
-      'initials': 'LY',
-    }
+    {'name': 'Lim Yan (Spouse)', 'phone': '+6 019 887 2233', 'initials': 'LY'},
   ];
 
   static const Color primaryColor = Color(0xFF3525CD);
@@ -87,7 +83,12 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
               children: [
                 const Text(
                   'Edit Account Details',
-                  style: TextStyle(fontFamily: 'Manrope', fontSize: 18, fontWeight: FontWeight.bold, color: onSurface),
+                  style: TextStyle(
+                    fontFamily: 'Manrope',
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: onSurface,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextField(
@@ -102,7 +103,9 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: licenseController,
-                  decoration: const InputDecoration(labelText: 'License Expiry'),
+                  decoration: const InputDecoration(
+                    labelText: 'License Expiry',
+                  ),
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
@@ -114,11 +117,19 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
                     });
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Account details updated successfully!')),
+                      const SnackBar(
+                        content: Text('Account details updated successfully!'),
+                      ),
                     );
                   },
-                  style: ElevatedButton.styleFrom(backgroundColor: primaryColor, minimumSize: const Size(double.infinity, 48)),
-                  child: const Text('Save Changes', style: TextStyle(color: Colors.white)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    minimumSize: const Size(double.infinity, 48),
+                  ),
+                  child: const Text(
+                    'Save Changes',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ],
             ),
@@ -139,7 +150,9 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
       backgroundColor: Colors.transparent,
       builder: (context) {
         return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: const BoxDecoration(
@@ -152,7 +165,12 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
               children: [
                 const Text(
                   'Vehicle Information',
-                  style: TextStyle(fontFamily: 'Manrope', fontSize: 18, fontWeight: FontWeight.bold, color: onSurface),
+                  style: TextStyle(
+                    fontFamily: 'Manrope',
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: onSurface,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextField(
@@ -167,7 +185,9 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
                 const SizedBox(height: 12),
                 TextField(
                   controller: maintenanceController,
-                  decoration: const InputDecoration(labelText: 'Last Maintenance Date'),
+                  decoration: const InputDecoration(
+                    labelText: 'Last Maintenance Date',
+                  ),
                 ),
                 const SizedBox(height: 24),
                 ElevatedButton(
@@ -179,11 +199,19 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
                     });
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Vehicle information updated!')),
+                      const SnackBar(
+                        content: Text('Vehicle information updated!'),
+                      ),
                     );
                   },
-                  style: ElevatedButton.styleFrom(backgroundColor: primaryColor, minimumSize: const Size(double.infinity, 48)),
-                  child: const Text('Update Vehicle', style: TextStyle(color: Colors.white)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    minimumSize: const Size(double.infinity, 48),
+                  ),
+                  child: const Text(
+                    'Update Vehicle',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ],
             ),
@@ -203,7 +231,9 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
       backgroundColor: Colors.transparent,
       builder: (context) {
         return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: const BoxDecoration(
@@ -216,12 +246,20 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
               children: [
                 const Text(
                   'Add Emergency Contact',
-                  style: TextStyle(fontFamily: 'Manrope', fontSize: 18, fontWeight: FontWeight.bold, color: onSurface),
+                  style: TextStyle(
+                    fontFamily: 'Manrope',
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: onSurface,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: nameController,
-                  decoration: const InputDecoration(labelText: 'Contact Name & Relation (e.g., John Doe - Brother)'),
+                  decoration: const InputDecoration(
+                    labelText:
+                        'Contact Name & Relation (e.g., John Doe - Brother)',
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -231,9 +269,12 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
                 const SizedBox(height: 24),
                 ElevatedButton(
                   onPressed: () {
-                    if (nameController.text.isNotEmpty && phoneController.text.isNotEmpty) {
+                    if (nameController.text.isNotEmpty &&
+                        phoneController.text.isNotEmpty) {
                       String name = nameController.text;
-                      String initials = name.isNotEmpty ? name.substring(0, 2).toUpperCase() : 'EC';
+                      String initials = name.isNotEmpty
+                          ? name.substring(0, 2).toUpperCase()
+                          : 'EC';
                       setState(() {
                         _emergencyContacts.add({
                           'name': name,
@@ -243,12 +284,22 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
                       });
                       Navigator.pop(context);
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Emergency contact added successfully!')),
+                        const SnackBar(
+                          content: Text(
+                            'Emergency contact added successfully!',
+                          ),
+                        ),
                       );
                     }
                   },
-                  style: ElevatedButton.styleFrom(backgroundColor: primaryColor, minimumSize: const Size(double.infinity, 48)),
-                  child: const Text('Save Contact', style: TextStyle(color: Colors.white)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    minimumSize: const Size(double.infinity, 48),
+                  ),
+                  child: const Text(
+                    'Save Contact',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ],
             ),
@@ -268,7 +319,9 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
       backgroundColor: Colors.transparent,
       builder: (context) {
         return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
           child: Container(
             padding: const EdgeInsets.all(24),
             decoration: const BoxDecoration(
@@ -281,13 +334,20 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
               children: [
                 const Text(
                   'Change Password',
-                  style: TextStyle(fontFamily: 'Manrope', fontSize: 18, fontWeight: FontWeight.bold, color: onSurface),
+                  style: TextStyle(
+                    fontFamily: 'Manrope',
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: onSurface,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 TextField(
                   controller: currentPassController,
                   obscureText: true,
-                  decoration: const InputDecoration(labelText: 'Current Password'),
+                  decoration: const InputDecoration(
+                    labelText: 'Current Password',
+                  ),
                 ),
                 const SizedBox(height: 12),
                 TextField(
@@ -300,11 +360,19 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
                   onPressed: () {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Password changed successfully!')),
+                      const SnackBar(
+                        content: Text('Password changed successfully!'),
+                      ),
                     );
                   },
-                  style: ElevatedButton.styleFrom(backgroundColor: primaryColor, minimumSize: const Size(double.infinity, 48)),
-                  child: const Text('Update Password', style: TextStyle(color: Colors.white)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryColor,
+                    minimumSize: const Size(double.infinity, 48),
+                  ),
+                  child: const Text(
+                    'Update Password',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ],
             ),
@@ -415,11 +483,16 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
               onTap: () {
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => const DriverHomePage()),
+                  MaterialPageRoute(
+                    builder: (context) => const DriverHomePage(),
+                  ),
                 );
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: const Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -442,15 +515,24 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
               onTap: () {
                 Navigator.pushReplacement(
                   context,
-                  MaterialPageRoute(builder: (context) => const DriverAnalyticsPage()),
+                  MaterialPageRoute(
+                    builder: (context) => const DriverAnalyticsPage(),
+                  ),
                 );
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: const Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.analytics_outlined, color: onSurfaceVariant, size: 20),
+                    Icon(
+                      Icons.analytics_outlined,
+                      color: onSurfaceVariant,
+                      size: 20,
+                    ),
                     SizedBox(height: 2),
                     Text(
                       'Analytics',
@@ -524,7 +606,11 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
                           width: 110,
                           height: 110,
                         )
-                      : const Icon(Icons.person, size: 64, color: secondaryColor),
+                      : const Icon(
+                          Icons.person,
+                          size: 64,
+                          color: secondaryColor,
+                        ),
                 ),
               ),
               Positioned(
@@ -607,7 +693,11 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
                     color: primaryContainer.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.verified_user, color: primaryColor, size: 24),
+                  child: const Icon(
+                    Icons.verified_user,
+                    color: primaryColor,
+                    size: 24,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 const Text(
@@ -659,7 +749,11 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
                     color: primaryContainer.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(Icons.auto_awesome, color: primaryColor, size: 24),
+                  child: const Icon(
+                    Icons.auto_awesome,
+                    color: primaryColor,
+                    size: 24,
+                  ),
                 ),
                 const SizedBox(height: 8),
                 const Text(
@@ -728,21 +822,45 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
                 ),
                 TextButton(
                   onPressed: _showEditAccountModal,
-                  child: const Text('Edit', style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
+                  child: const Text(
+                    'Edit',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: primaryColor,
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
           Divider(height: 1, color: outlineVariant.withValues(alpha: 0.3)),
-          _buildInfoRow('EMAIL', _driverEmail, trailingIcon: Icons.chevron_right),
-          _buildInfoRow('PHONE', _driverPhone, trailingIcon: Icons.chevron_right),
-          _buildInfoRow('LICENSE EXPIRY', _licenseExpiry, trailingIcon: Icons.calendar_today, isLast: true),
+          _buildInfoRow(
+            'EMAIL',
+            _driverEmail,
+            trailingIcon: Icons.chevron_right,
+          ),
+          _buildInfoRow(
+            'PHONE',
+            _driverPhone,
+            trailingIcon: Icons.chevron_right,
+          ),
+          _buildInfoRow(
+            'LICENSE EXPIRY',
+            _licenseExpiry,
+            trailingIcon: Icons.calendar_today,
+            isLast: true,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildInfoRow(String label, String value, {required IconData trailingIcon, bool isLast = false}) {
+  Widget _buildInfoRow(
+    String label,
+    String value, {
+    required IconData trailingIcon,
+    bool isLast = false,
+  }) {
     return Column(
       children: [
         Padding(
@@ -822,7 +940,13 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
                 ),
                 TextButton(
                   onPressed: _showVehicleInfoModal,
-                  child: const Text('Update', style: TextStyle(fontWeight: FontWeight.bold, color: primaryColor)),
+                  child: const Text(
+                    'Update',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: primaryColor,
+                    ),
+                  ),
                 ),
               ],
             ),
@@ -886,7 +1010,10 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
                   ],
                 ),
                 const SizedBox(height: 16),
-                Divider(height: 1, color: outlineVariant.withValues(alpha: 0.2)),
+                Divider(
+                  height: 1,
+                  color: outlineVariant.withValues(alpha: 0.2),
+                ),
                 const SizedBox(height: 12),
                 const Align(
                   alignment: Alignment.centerLeft,
@@ -941,7 +1068,10 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
       child: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 12.0,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -999,7 +1129,9 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,
-                        border: Border.all(color: errorColor.withValues(alpha: 0.2)),
+                        border: Border.all(
+                          color: errorColor.withValues(alpha: 0.2),
+                        ),
                       ),
                       child: Center(
                         child: Text(
@@ -1039,7 +1171,11 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.delete_outline, color: outline, size: 20),
+                      icon: const Icon(
+                        Icons.delete_outline,
+                        color: outline,
+                        size: 20,
+                      ),
                       onPressed: () {
                         setState(() {
                           _emergencyContacts.removeAt(index);
@@ -1087,12 +1223,18 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                trailing: const Icon(Icons.chevron_right, color: outlineVariant),
+                trailing: const Icon(
+                  Icons.chevron_right,
+                  color: outlineVariant,
+                ),
                 onTap: _showChangePasswordModal,
               ),
               Divider(height: 1, color: outlineVariant.withValues(alpha: 0.3)),
               ListTile(
-                leading: const Icon(Icons.policy_outlined, color: onSurfaceVariant),
+                leading: const Icon(
+                  Icons.policy_outlined,
+                  color: onSurfaceVariant,
+                ),
                 title: const Text(
                   'Privacy Policy',
                   style: TextStyle(
@@ -1101,7 +1243,10 @@ class _DriverProfilePageState extends State<DriverProfilePage> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                trailing: const Icon(Icons.chevron_right, color: outlineVariant),
+                trailing: const Icon(
+                  Icons.chevron_right,
+                  color: outlineVariant,
+                ),
                 onTap: _showPrivacyPolicyDialog,
               ),
             ],

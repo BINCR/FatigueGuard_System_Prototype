@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'login.dart'; // Ensure correct import of login page
+
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
 
@@ -34,7 +35,8 @@ class _SignupPageState extends State<SignupPage> {
   void _handleRegister() {
     if (_formKey.currentState!.validate()) {
       // If the role is fleet_manager, validate the specific authorization key (e.g., set as "MP")
-      if (_selectedRole == 'fleet_manager' && _managerKeyController.text.trim() != 'MP') {
+      if (_selectedRole == 'fleet_manager' &&
+          _managerKeyController.text.trim() != 'MP') {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Invalid Manager Authorization Key! (Hint: MP)'),
@@ -76,7 +78,11 @@ class _SignupPageState extends State<SignupPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF111C2D), size: 20),
+          icon: const Icon(
+            Icons.arrow_back_ios_new,
+            color: Color(0xFF111C2D),
+            size: 20,
+          ),
           onPressed: () {
             Navigator.pushReplacement(
               context,
@@ -131,36 +137,71 @@ class _SignupPageState extends State<SignupPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildTextField("FULL NAME", "John Doe", _nameController),
-                          _buildTextField("EMAIL", "driver@gmail.com", _emailController, isEmail: true),
-                          _buildTextField("PHONE NUMBER", "+60123456789", _phoneController),
-                          _buildTextField("PASSWORD", "••••••••", _passwordController, isPassword: true),
+                          _buildTextField(
+                            "FULL NAME",
+                            "John Doe",
+                            _nameController,
+                          ),
+                          _buildTextField(
+                            "EMAIL",
+                            "driver@gmail.com",
+                            _emailController,
+                            isEmail: true,
+                          ),
+                          _buildTextField(
+                            "PHONE NUMBER",
+                            "+60123456789",
+                            _phoneController,
+                          ),
+                          _buildTextField(
+                            "PASSWORD",
+                            "••••••••",
+                            _passwordController,
+                            isPassword: true,
+                          ),
 
                           // Role Select
                           _buildLabel("ROLE"),
                           DropdownButtonFormField<String>(
                             initialValue: _selectedRole,
                             items: const [
-                              DropdownMenuItem(value: 'driver', child: Text("Driver")),
-                              DropdownMenuItem(value: 'fleet_manager', child: Text("Fleet Manager")),
+                              DropdownMenuItem(
+                                value: 'driver',
+                                child: Text("Driver"),
+                              ),
+                              DropdownMenuItem(
+                                value: 'fleet_manager',
+                                child: Text("Fleet Manager"),
+                              ),
                             ],
-                            onChanged: (val) => setState(() => _selectedRole = val!),
+                            onChanged: (val) =>
+                                setState(() => _selectedRole = val!),
                             decoration: _inputDeco(),
                           ),
 
                           // Conditional: Manager Authorization Key
                           if (_selectedRole == 'fleet_manager') ...[
                             const SizedBox(height: 16),
-                            _buildLabel("MANAGER AUTHORIZATION KEY", color: errorColor),
+                            _buildLabel(
+                              "MANAGER AUTHORIZATION KEY",
+                              color: errorColor,
+                            ),
                             TextFormField(
                               controller: _managerKeyController,
                               obscureText: true,
-                              decoration: _inputDeco(hint: "Enter Access Code", isError: true)
-                                  .copyWith(
-                                    suffixIcon: const Icon(Icons.lock, color: Color(0xFFBA1A1A)),
+                              decoration:
+                                  _inputDeco(
+                                    hint: "Enter Access Code",
+                                    isError: true,
+                                  ).copyWith(
+                                    suffixIcon: const Icon(
+                                      Icons.lock,
+                                      color: Color(0xFFBA1A1A),
+                                    ),
                                   ),
                               validator: (val) {
-                                if (_selectedRole == 'fleet_manager' && (val == null || val.isEmpty)) {
+                                if (_selectedRole == 'fleet_manager' &&
+                                    (val == null || val.isEmpty)) {
                                   return 'Manager key is required';
                                 }
                                 return null;
@@ -168,7 +209,9 @@ class _SignupPageState extends State<SignupPage> {
                             ),
                             const SizedBox(height: 4),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                              ),
                               child: Text(
                                 "RESTRICTED ACCESS FIELD",
                                 style: GoogleFonts.jetBrainsMono(
@@ -200,9 +243,20 @@ class _SignupPageState extends State<SignupPage> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: const [
-                          Text("Register Account", style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+                          Text(
+                            "Register Account",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                           SizedBox(width: 8),
-                          Icon(Icons.arrow_forward, size: 18, color: Colors.white),
+                          Icon(
+                            Icons.arrow_forward,
+                            size: 18,
+                            color: Colors.white,
+                          ),
                         ],
                       ),
                     ),
@@ -237,13 +291,18 @@ class _SignupPageState extends State<SignupPage> {
                       children: [
                         Text(
                           "Already have an account? ",
-                          style: GoogleFonts.manrope(fontSize: 16, color: variantColor),
+                          style: GoogleFonts.manrope(
+                            fontSize: 16,
+                            color: variantColor,
+                          ),
                         ),
                         InkWell(
                           onTap: () {
                             Navigator.pushReplacement(
                               context,
-                              MaterialPageRoute(builder: (context) => const LoginPage()),
+                              MaterialPageRoute(
+                                builder: (context) => const LoginPage(),
+                              ),
                             );
                           },
                           child: Text(
@@ -268,55 +327,67 @@ class _SignupPageState extends State<SignupPage> {
     );
   }
 
-  Widget _buildTextField(String label, String hint, TextEditingController controller, {bool isPassword = false, bool isEmail = false}) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildLabel(label),
-          TextFormField(
-            controller: controller,
-            obscureText: isPassword,
-            keyboardType: isEmail ? TextInputType.emailAddress : TextInputType.text,
-            decoration: _inputDeco(hint: hint),
-            validator: (value) {
-              if (value == null || value.isEmpty) {
-                return '$label cannot be empty';
-              }
-              if (isEmail && !value.contains('@')) {
-                return 'Please enter a valid email address';
-              }
-              if (isPassword && value.length < 6) {
-                return 'Password must be at least 6 characters';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-        ],
-      );
+  Widget _buildTextField(
+    String label,
+    String hint,
+    TextEditingController controller, {
+    bool isPassword = false,
+    bool isEmail = false,
+  }) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _buildLabel(label),
+      TextFormField(
+        controller: controller,
+        obscureText: isPassword,
+        keyboardType: isEmail ? TextInputType.emailAddress : TextInputType.text,
+        decoration: _inputDeco(hint: hint),
+        validator: (value) {
+          if (value == null || value.isEmpty) {
+            return '$label cannot be empty';
+          }
+          if (isEmail && !value.contains('@')) {
+            return 'Please enter a valid email address';
+          }
+          if (isPassword && value.length < 6) {
+            return 'Password must be at least 6 characters';
+          }
+          return null;
+        },
+      ),
+      const SizedBox(height: 16),
+    ],
+  );
 
   Widget _buildLabel(String text, {Color? color}) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Text(
-          text,
-          style: GoogleFonts.jetBrainsMono(
-            fontSize: 10,
-            fontWeight: FontWeight.w600,
-            color: color ?? variantColor,
-          ),
-        ),
-      );
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Text(
+      text,
+      style: GoogleFonts.jetBrainsMono(
+        fontSize: 10,
+        fontWeight: FontWeight.w600,
+        color: color ?? variantColor,
+      ),
+    ),
+  );
 
-  InputDecoration _inputDeco({String? hint, bool isError = false}) => InputDecoration(
+  InputDecoration _inputDeco({String? hint, bool isError = false}) =>
+      InputDecoration(
         hintText: hint,
         filled: true,
-        fillColor: isError ? errorColor.withValues(alpha: 0.1) : const Color(0xFFF1F5F9),
+        fillColor: isError
+            ? errorColor.withValues(alpha: 0.1)
+            : const Color(0xFFF1F5F9),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: isError ? errorColor : primaryContainer, width: 2),
+          borderSide: BorderSide(
+            color: isError ? errorColor : primaryContainer,
+            width: 2,
+          ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),

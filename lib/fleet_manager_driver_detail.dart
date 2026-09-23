@@ -11,8 +11,8 @@ class FleetManagerDriverDetailPage extends StatefulWidget {
   final int score;
   final String statusText;
   final String riskLevel;
-  final double latitude;   // Driver-specific latitude
-  final double longitude;  // Driver-specific longitude
+  final double latitude; // Driver-specific latitude
+  final double longitude; // Driver-specific longitude
 
   const FleetManagerDriverDetailPage({
     super.key,
@@ -22,7 +22,7 @@ class FleetManagerDriverDetailPage extends StatefulWidget {
     this.score = 72,
     this.statusText = 'Action Recommended',
     this.riskLevel = 'at_risk',
-    this.latitude = 1.4927,   // Default coordinates
+    this.latitude = 1.4927, // Default coordinates
     this.longitude = 103.7414,
   });
 
@@ -238,14 +238,14 @@ class _FleetManagerDriverDetailPageState
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const DriverSelectPage(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const DriverSelectPage()),
                 );
               },
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: primaryContainer,
                   borderRadius: BorderRadius.circular(9999),
@@ -462,7 +462,11 @@ class _FleetManagerDriverDetailPageState
           child: ElevatedButton(
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Calling ${widget.driverName} (+60 12-345 6789)...')),
+                SnackBar(
+                  content: Text(
+                    'Calling ${widget.driverName} (+60 12-345 6789)...',
+                  ),
+                ),
               );
             },
             style: ElevatedButton.styleFrom(
@@ -495,7 +499,11 @@ class _FleetManagerDriverDetailPageState
           child: ElevatedButton(
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Rest advisory sent to Truck ${widget.vehicleId}.')),
+                SnackBar(
+                  content: Text(
+                    'Rest advisory sent to Truck ${widget.vehicleId}.',
+                  ),
+                ),
               );
             },
             style: ElevatedButton.styleFrom(
@@ -510,7 +518,11 @@ class _FleetManagerDriverDetailPageState
             child: const Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.chat_bubble_outline, size: 18, color: onSurfaceVariant),
+                Icon(
+                  Icons.chat_bubble_outline,
+                  size: 18,
+                  color: onSurfaceVariant,
+                ),
                 SizedBox(width: 8),
                 Text(
                   'Rest Advisory',
@@ -561,7 +573,10 @@ class _FleetManagerDriverDetailPageState
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(6),
@@ -586,7 +601,11 @@ class _FleetManagerDriverDetailPageState
                           border: Border.all(color: Colors.white, width: 2),
                         ),
                         child: const Center(
-                          child: Icon(Icons.local_shipping, size: 14, color: Colors.white),
+                          child: Icon(
+                            Icons.local_shipping,
+                            size: 14,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ],

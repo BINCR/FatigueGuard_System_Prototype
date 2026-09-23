@@ -22,15 +22,17 @@ class _FatigueLevel1PageState extends State<FatigueLevel1Page> {
   Future<void> _initTtsAndPlay() async {
     // Set language (can be set to Chinese "zh-CN" or English "en-US" as needed)
     await _flutterTts.setLanguage("en-US");
-    
+
     // Set speech rate (between 0.0 and 1.0, 0.9 is slightly steady and clear)
     await _flutterTts.setSpeechRate(0.5);
-    
+
     // Set pitch
     await _flutterTts.setPitch(1.0);
 
     // Trigger voice broadcast
-    await _flutterTts.speak("Please consider stopping at a rest area soon to maintain safety standards.");
+    await _flutterTts.speak(
+      "Please consider stopping at a rest area soon to maintain safety standards.",
+    );
   }
 
   @override
@@ -45,7 +47,9 @@ class _FatigueLevel1PageState extends State<FatigueLevel1Page> {
     return Theme(
       data: ThemeData.light(),
       child: Scaffold(
-        backgroundColor: const Color(0xFFFFFBEB), // Light yellow bright background
+        backgroundColor: const Color(
+          0xFFFFFBEB,
+        ), // Light yellow bright background
         body: SafeArea(
           child: Column(
             children: [
@@ -53,7 +57,10 @@ class _FatigueLevel1PageState extends State<FatigueLevel1Page> {
               Container(
                 width: double.infinity,
                 color: const Color(0xFFFBBF24),
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 12,
+                  horizontal: 20,
+                ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: const [
@@ -74,7 +81,10 @@ class _FatigueLevel1PageState extends State<FatigueLevel1Page> {
               ),
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 32),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 32,
+                  ),
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 440),
                     child: Column(
@@ -89,7 +99,10 @@ class _FatigueLevel1PageState extends State<FatigueLevel1Page> {
                                 shape: BoxShape.circle,
                               ),
                               child: const Center(
-                                child: Text('🥱', style: TextStyle(fontSize: 84)),
+                                child: Text(
+                                  '🥱',
+                                  style: TextStyle(fontSize: 84),
+                                ),
                               ),
                             ),
                             const SizedBox(height: 24),
@@ -105,7 +118,10 @@ class _FatigueLevel1PageState extends State<FatigueLevel1Page> {
                             ),
                             const SizedBox(height: 8),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFE2E8F0),
                                 borderRadius: BorderRadius.circular(9999),
@@ -148,7 +164,11 @@ class _FatigueLevel1PageState extends State<FatigueLevel1Page> {
                                   color: const Color(0xFFFEF3C7),
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                child: const Icon(Icons.volume_up, color: Color(0xFFD97706), size: 20),
+                                child: const Icon(
+                                  Icons.volume_up,
+                                  color: Color(0xFFD97706),
+                                  size: 20,
+                                ),
                               ),
                               const SizedBox(width: 16),
                               const Expanded(
@@ -186,9 +206,13 @@ class _FatigueLevel1PageState extends State<FatigueLevel1Page> {
                           height: 56,
                           child: ElevatedButton.icon(
                             onPressed: () {
-                              _flutterTts.speak("Opening nearest rest and recreation map.");
+                              _flutterTts.speak(
+                                "Opening nearest rest and recreation map.",
+                              );
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Opening nearest R&R map...')),
+                                const SnackBar(
+                                  content: Text('Opening nearest R&R map...'),
+                                ),
                               );
                             },
                             style: ElevatedButton.styleFrom(
@@ -202,7 +226,10 @@ class _FatigueLevel1PageState extends State<FatigueLevel1Page> {
                             icon: const Icon(Icons.local_gas_station),
                             label: const Text(
                               'FIND NEAREST R&R / PETROL',
-                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
                         ),
@@ -211,7 +238,11 @@ class _FatigueLevel1PageState extends State<FatigueLevel1Page> {
                           onPressed: () => Navigator.pop(context),
                           child: const Text(
                             'Dismiss',
-                            style: TextStyle(fontSize: 16, color: Color(0xFF464555), fontWeight: FontWeight.w500),
+                            style: TextStyle(
+                              fontSize: 16,
+                              color: Color(0xFF464555),
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ],
@@ -241,11 +272,20 @@ class _FatigueLevel1PageState extends State<FatigueLevel1Page> {
                         children: const [
                           Text(
                             'FATIGUE LEVEL',
-                            style: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 10, color: Color(0xFF464555)),
+                            style: TextStyle(
+                              fontFamily: 'JetBrains Mono',
+                              fontSize: 10,
+                              color: Color(0xFF464555),
+                            ),
                           ),
                           Text(
                             '25% (MILD)',
-                            style: TextStyle(fontFamily: 'JetBrains Mono', fontSize: 10, color: Color(0xFFD97706), fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontFamily: 'JetBrains Mono',
+                              fontSize: 10,
+                              color: Color(0xFFD97706),
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ],
                       ),

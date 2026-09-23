@@ -44,7 +44,8 @@ class _DriverHomePageState extends State<DriverHomePage>
     DriverNotificationItem(
       id: '1',
       title: 'Rest Advisory from Fleet Manager',
-      message: 'Manager requested you to take a mandatory 15-min rest stop at the nearest R&R.',
+      message:
+          'Manager requested you to take a mandatory 15-min rest stop at the nearest R&R.',
       time: '10m ago',
       icon: Icons.coffee,
       iconBgColor: const Color(0xFFFEF3C7),
@@ -54,7 +55,8 @@ class _DriverHomePageState extends State<DriverHomePage>
     DriverNotificationItem(
       id: '2',
       title: 'ESP32 Sensor Reconnected',
-      message: 'Head pose tracking and G-force sensors calibrated successfully.',
+      message:
+          'Head pose tracking and G-force sensors calibrated successfully.',
       time: '45m ago',
       icon: Icons.sensors,
       iconBgColor: const Color(0xFFDCFCE7),
@@ -74,7 +76,8 @@ class _DriverHomePageState extends State<DriverHomePage>
     DriverNotificationItem(
       id: '4',
       title: 'Weekly Safety Score Ready',
-      message: 'Great job! You achieved a 92% safe driving compliance this week.',
+      message:
+          'Great job! You achieved a 92% safe driving compliance this week.',
       time: '1d ago',
       icon: Icons.military_tech,
       iconBgColor: const Color(0xFFEDE9FE),
@@ -170,7 +173,9 @@ class _DriverHomePageState extends State<DriverHomePage>
                               const SizedBox(width: 8),
                               Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 2),
+                                  horizontal: 8,
+                                  vertical: 2,
+                                ),
                                 decoration: BoxDecoration(
                                   color: primaryContainer,
                                   borderRadius: BorderRadius.circular(10),
@@ -225,7 +230,9 @@ class _DriverHomePageState extends State<DriverHomePage>
                           )
                         : ListView.separated(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 12),
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
                             itemCount: _notifications.length,
                             separatorBuilder: (context, index) =>
                                 const SizedBox(height: 10),
@@ -247,30 +254,41 @@ class _DriverHomePageState extends State<DriverHomePage>
                                     borderRadius: BorderRadius.circular(16),
                                     border: Border.all(
                                       color: item.isRead
-                                          ? outlineVariant.withValues(alpha: 0.3)
-                                          : primaryContainer.withValues(alpha: 0.3),
+                                          ? outlineVariant.withValues(
+                                              alpha: 0.3,
+                                            )
+                                          : primaryContainer.withValues(
+                                              alpha: 0.3,
+                                            ),
                                     ),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: Colors.black.withValues(alpha: 0.02),
+                                        color: Colors.black.withValues(
+                                          alpha: 0.02,
+                                        ),
                                         blurRadius: 4,
                                         offset: const Offset(0, 2),
                                       ),
                                     ],
                                   ),
                                   child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Container(
                                         width: 38,
                                         height: 38,
                                         decoration: BoxDecoration(
                                           color: item.iconBgColor,
-                                          borderRadius:
-                                              BorderRadius.circular(12),
+                                          borderRadius: BorderRadius.circular(
+                                            12,
+                                          ),
                                         ),
-                                        child: Icon(item.icon,
-                                            color: item.iconColor, size: 20),
+                                        child: Icon(
+                                          item.icon,
+                                          color: item.iconColor,
+                                          size: 20,
+                                        ),
                                       ),
                                       const SizedBox(width: 12),
                                       Expanded(
@@ -280,7 +298,8 @@ class _DriverHomePageState extends State<DriverHomePage>
                                           children: [
                                             Row(
                                               mainAxisAlignment:
-                                                  MainAxisAlignment.spaceBetween,
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
                                               children: [
                                                 Expanded(
                                                   child: Text(
@@ -298,7 +317,8 @@ class _DriverHomePageState extends State<DriverHomePage>
                                                 Text(
                                                   item.time,
                                                   style: const TextStyle(
-                                                    fontFamily: 'JetBrains Mono',
+                                                    fontFamily:
+                                                        'JetBrains Mono',
                                                     fontSize: 10,
                                                     color: onSurfaceVariant,
                                                   ),
@@ -368,8 +388,11 @@ class _DriverHomePageState extends State<DriverHomePage>
             alignment: Alignment.center,
             children: [
               IconButton(
-                icon: const Icon(Icons.notifications_outlined,
-                    color: onSurfaceVariant, size: 24),
+                icon: const Icon(
+                  Icons.notifications_outlined,
+                  color: onSurfaceVariant,
+                  size: 24,
+                ),
                 onPressed: _showNotificationsSheet,
               ),
               if (_unreadNotificationCount > 0)
@@ -414,7 +437,8 @@ class _DriverHomePageState extends State<DriverHomePage>
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => const DrivingIngPage()),
+                        builder: (context) => const DrivingIngPage(),
+                      ),
                     );
                   },
                   style: ElevatedButton.styleFrom(
@@ -492,15 +516,22 @@ class _DriverHomePageState extends State<DriverHomePage>
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => const DriverAnalyticsPage()),
+                    builder: (context) => const DriverAnalyticsPage(),
+                  ),
                 );
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: const Row(
                   children: [
-                    Icon(Icons.leaderboard_outlined,
-                        color: onSurfaceVariant, size: 18),
+                    Icon(
+                      Icons.leaderboard_outlined,
+                      color: onSurfaceVariant,
+                      size: 18,
+                    ),
                     SizedBox(width: 6),
                     Text(
                       'Analytics',
@@ -520,15 +551,22 @@ class _DriverHomePageState extends State<DriverHomePage>
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => const DriverProfilePage()),
+                    builder: (context) => const DriverProfilePage(),
+                  ),
                 );
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: const Row(
                   children: [
-                    Icon(Icons.person_outline,
-                        color: onSurfaceVariant, size: 18),
+                    Icon(
+                      Icons.person_outline,
+                      color: onSurfaceVariant,
+                      size: 18,
+                    ),
                     SizedBox(width: 6),
                     Text(
                       'Profile',
@@ -568,8 +606,11 @@ class _DriverHomePageState extends State<DriverHomePage>
             const SizedBox(height: 4),
             Row(
               children: [
-                const Icon(Icons.badge_outlined,
-                    size: 14, color: onSurfaceVariant),
+                const Icon(
+                  Icons.badge_outlined,
+                  size: 14,
+                  color: onSurfaceVariant,
+                ),
                 const SizedBox(width: 4),
                 const Text(
                   'DRIVER ROLE',
@@ -588,7 +629,9 @@ class _DriverHomePageState extends State<DriverHomePage>
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const DriverProfilePage()),
+              MaterialPageRoute(
+                builder: (context) => const DriverProfilePage(),
+              ),
             );
           },
           child: Container(
@@ -647,8 +690,11 @@ class _DriverHomePageState extends State<DriverHomePage>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Icon(Icons.settings_input_component,
-                        color: primaryColor, size: 22),
+                    const Icon(
+                      Icons.settings_input_component,
+                      color: primaryColor,
+                      size: 22,
+                    ),
                     Container(
                       width: 10,
                       height: 10,
@@ -953,7 +999,10 @@ class _DriverHomePageState extends State<DriverHomePage>
                 ),
                 const SizedBox(height: 10),
                 _buildSummaryItem(
-                    Icons.warning_amber_rounded, 'FATIGUE', '0 Events'),
+                  Icons.warning_amber_rounded,
+                  'FATIGUE',
+                  '0 Events',
+                ),
                 const SizedBox(height: 8),
                 _buildSummaryItem(Icons.schedule, 'DRIVE TIME', '42 min'),
                 const SizedBox(height: 8),
