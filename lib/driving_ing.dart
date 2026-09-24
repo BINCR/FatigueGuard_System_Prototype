@@ -46,6 +46,7 @@ class _DrivingIngPageState extends State<DrivingIngPage>
 
   bool _voiceListening = false;
   bool _voiceFeedbackEnabled = true;
+  Future<void>? _voiceResponseInProgress;
 
   String _currentLabel = 'waiting';
   double _currentConfidence = 0.0;
@@ -286,14 +287,26 @@ class _DrivingIngPageState extends State<DrivingIngPage>
   }
 
   Future<void> _speakVoiceResponse(String message) async {
-    if (!_voiceFeedbackEnabled) return;
+    if (!_voiceFeedbackEnabled || !mounted || _voiceResponseInProgress != null) {
+      return;
+    }
+    final Future<void> response = _playVoiceResponse(message);
+    _voiceResponseInProgress = response;
+    try {
+      await response;
+    } finally {
+      _voiceResponseInProgress = null;
+    }
+  }
 
+  Future<void> _playVoiceResponse(String message) async {
     await _voiceCommandService.stop();
-    await _voiceFeedback.stop();
-    await _voiceFeedback.speak(message);
-
-    if (mounted) {
-      await _voiceCommandService.start();
+    if (!mounted) return;
+    try {
+      await _voiceFeedback.stop();
+      await _voiceFeedback.speak(message);
+    } finally {
+      if (mounted) await _voiceCommandService.start();
     }
   }
 

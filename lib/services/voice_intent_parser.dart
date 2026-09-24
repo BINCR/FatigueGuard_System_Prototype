@@ -2,6 +2,7 @@ import '../models/voice_intent.dart';
 
 class VoiceIntentParser {
   static const List<String> _wakeWords = <String>[
+    'fg',
     'fatigue guard',
     'fatigued guard',
     'fatigue card',

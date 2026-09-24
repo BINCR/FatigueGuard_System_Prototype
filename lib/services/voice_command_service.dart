@@ -22,6 +22,7 @@ class VoiceCommandService {
   bool _shouldKeepListening = false;
   bool _starting = false;
   bool _disposed = false;
+  int _generation = 0;
   String? _localeId;
   String _lastProcessedText = '';
   DateTime? _lastProcessedAt;
@@ -36,7 +37,6 @@ class VoiceCommandService {
     final bool available = await _speech.initialize(
       onStatus: _handleStatus,
       onError: (_) {
-        if (!_disposed) _listeningController.add(false);
         _scheduleRestart();
       },
     );
@@ -48,20 +48,25 @@ class VoiceCommandService {
   Future<bool> start({String? localeId}) async {
     if (_disposed) return false;
 
+    if (_shouldKeepListening) return true;
+    final int generation = ++_generation;
     _localeId = localeId;
     _shouldKeepListening = true;
 
     final bool available = await initialise();
+    if (_disposed || generation != _generation) return false;
     if (!available) {
       _shouldKeepListening = false;
       return false;
     }
 
+    _listeningController.add(true);
     await _startListeningSession();
     return true;
   }
 
   Future<void> stop() async {
+    ++_generation;
     _shouldKeepListening = false;
     _restartTimer?.cancel();
     if (_speech.isListening) await _speech.stop();
@@ -69,6 +74,7 @@ class VoiceCommandService {
   }
 
   Future<void> cancel() async {
+    ++_generation;
     _shouldKeepListening = false;
     _restartTimer?.cancel();
     if (_speech.isListening) await _speech.cancel();
@@ -96,7 +102,7 @@ class VoiceCommandService {
           listenMode: ListenMode.confirmation,
         ),
       );
-      if (!_disposed) _listeningController.add(_speech.isListening);
+      // Keep the UI enabled throughout the recogniser's short session gaps.
     } finally {
       _starting = false;
     }
@@ -126,7 +132,6 @@ class VoiceCommandService {
 
   void _handleStatus(String status) {
     if (_disposed) return;
-    _listeningController.add(_speech.isListening);
     if (status == 'done' || status == 'notListening') _scheduleRestart();
   }
 
@@ -134,7 +139,7 @@ class VoiceCommandService {
     if (_disposed || !_shouldKeepListening) return;
     _restartTimer?.cancel();
     _restartTimer = Timer(
-      const Duration(milliseconds: 500),
+      const Duration(milliseconds: 1200),
       () => unawaited(_startListeningSession()),
     );
   }
