@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_tts/flutter_tts.dart';
 
 import 'collision_detect.dart';
 import 'distraction_alert.dart';
@@ -13,12 +12,10 @@ import 'driver_profile.dart';
 import 'fatigue_level1.dart';
 import 'fatigue_level2.dart';
 import 'fatigue_level3.dart';
-import 'models/voice_intent.dart';
 import 'profile_data.dart';
 import 'services/esp32_service.dart';
 import 'services/face_analysis_service.dart';
 import 'services/storage_service.dart';
-import 'services/voice_command_service.dart';
 
 class DrivingIngPage extends StatefulWidget {
   const DrivingIngPage({super.key});
@@ -35,18 +32,10 @@ class _DrivingIngPageState extends State<DrivingIngPage>
 
   final Esp32Service _esp32Service = Esp32Service();
   final FaceAnalysisService _faceAnalysisService = FaceAnalysisService();
-  final VoiceCommandService _voiceCommandService = VoiceCommandService();
-  final FlutterTts _voiceFeedback = FlutterTts();
-
   StreamSubscription<DetectionResult>? _detectionSubscription;
   StreamSubscription<bool>? _connectionSubscription;
   StreamSubscription<FaceMetrics>? _faceMetricsSubscription;
-  StreamSubscription<VoiceCommand>? _voiceCommandSubscription;
-  StreamSubscription<bool>? _voiceListeningSubscription;
 
-  bool _voiceListening = false;
-  bool _voiceFeedbackEnabled = true;
-  Future<void>? _voiceResponseInProgress;
 
   String _currentLabel = 'waiting';
   double _currentConfidence = 0.0;
@@ -64,24 +53,19 @@ class _DrivingIngPageState extends State<DrivingIngPage>
   bool _alertPageOpen = false;
   int _fatigueAlertLevel = 0;
   DateTime? _lastAlertClosedAt;
-  Timer? _testNotificationTimer;
-  String? _testNotification;
-  Color _testNotificationColor = Colors.orange;
-  int _testEventCount = 0;
   bool _fatigueEpisodeActive = false;
+  bool _edgeDrowsyEpisodeActive = false;
   bool _distractedEpisodeActive = false;
 
-  // Testing build: detections stay on this page and never open warning pages.
-  static const bool _testingMode = true;
-
-  // Real ESP32 is the default. The user can switch to Demo from the app bar.
-  bool _useMockData = false;
 
   int _consecutiveDistractedDetections = 0;
+  int _consecutiveDrowsyDetections = 0;
 
   // Distracted detection was much more stable, so keep its stricter rule.
   static const double _distractedAlertConfidence = 0.80;
   static const int _requiredConsecutiveDistractedDetections = 3;
+  static const double _drowsyAlertConfidence = 0.80;
+  static const int _requiredConsecutiveDrowsyDetections = 3;
   static const Duration _alertCooldown = Duration(seconds: 8);
 
   static const Color primaryColor = Color(0xFF3525CD);
@@ -124,6 +108,15 @@ class _DrivingIngPageState extends State<DrivingIngPage>
 
       setState(() {
         _esp32Connected = connected;
+        if (!connected) {
+          _currentLabel = 'waiting';
+          _currentConfidence = 0.0;
+          _faceDetected = false;
+          _faceAlertness = 0.0;
+          _consecutiveDistractedDetections = 0;
+          _consecutiveDrowsyDetections = 0;
+          _edgeDrowsyEpisodeActive = false;
+        }
       });
     });
 
@@ -145,185 +138,20 @@ class _DrivingIngPageState extends State<DrivingIngPage>
       unawaited(_handleFaceMetrics(metrics));
     });
 
-    _esp32Service.start(mockMode: _useMockData);
+    _esp32Service.start();
     unawaited(_faceAnalysisService.start());
 
-    _voiceCommandSubscription = _voiceCommandService.commands.listen((
-      VoiceCommand command,
-    ) {
-      unawaited(_handleVoiceCommand(command));
-    });
-
-    _voiceListeningSubscription = _voiceCommandService.listeningStatus.listen((
-      bool listening,
-    ) {
-      if (!mounted) return;
-
-      setState(() {
-        _voiceListening = listening;
-      });
-    });
-
-    unawaited(_startVoiceControl());
-  }
-
-  Future<void> _startVoiceControl() async {
-    await _voiceFeedback.setLanguage('en-US');
-    await _voiceFeedback.setSpeechRate(0.5);
-    await _voiceFeedback.setPitch(1.0);
-    await _voiceFeedback.awaitSpeakCompletion(true);
-
-    final bool started = await _voiceCommandService.start();
-
-    if (!started && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Voice control unavailable. Please allow microphone permission.',
-          ),
-        ),
-      );
-    }
-  }
-
-  Future<void> _handleVoiceCommand(VoiceCommand command) async {
-    switch (command.intent) {
-      case VoiceIntent.startMonitoring:
-        if (_isPaused && mounted) {
-          setState(() {
-            _isPaused = false;
-          });
-        }
-        await _speakVoiceResponse('Monitoring started.');
-        break;
-      case VoiceIntent.stopMonitoring:
-        if (!_isPaused && mounted) {
-          setState(() {
-            _isPaused = true;
-          });
-        }
-        await _speakVoiceResponse('Monitoring paused.');
-        break;
-      case VoiceIntent.dismissWarning:
-        await _dismissWarningByVoice();
-        break;
-      case VoiceIntent.checkStatus:
-        await _speakCurrentStatus();
-        break;
-      case VoiceIntent.openMonitoring:
-        await _speakVoiceResponse('Monitoring page is already open.');
-        break;
-      case VoiceIntent.openAnalytics:
-        await _speakVoiceResponse('Opening analytics.');
-        if (!mounted) return;
-        await _endSessionAndOpen(const DriverAnalyticsPage());
-        break;
-      case VoiceIntent.openProfile:
-        await _speakVoiceResponse('Opening profile.');
-        if (!mounted) return;
-        await _endSessionAndOpen(const DriverProfilePage());
-        break;
-      case VoiceIntent.mute:
-        _voiceFeedbackEnabled = false;
-        await _voiceFeedback.stop();
-        break;
-      case VoiceIntent.enableSound:
-        _voiceFeedbackEnabled = true;
-        await _speakVoiceResponse('Voice feedback enabled.');
-        break;
-      case VoiceIntent.unknown:
-        await _speakVoiceResponse('Command not recognised.');
-        break;
-      case VoiceIntent.none:
-        break;
-    }
-  }
-
-  Future<void> _dismissWarningByVoice() async {
-    bool warningDismissed = false;
-
-    if (_testNotification != null && mounted) {
-      _testNotificationTimer?.cancel();
-      setState(() {
-        _testNotification = null;
-      });
-      warningDismissed = true;
-    }
-
-    if (_alertPageOpen && mounted) {
-      await Navigator.of(context).maybePop();
-      warningDismissed = true;
-    }
-
-    await _speakVoiceResponse(
-      warningDismissed ? 'Warning dismissed.' : 'There is no active warning.',
-    );
-  }
-
-  Future<void> _speakCurrentStatus() async {
-    if (!_esp32Connected) {
-      await _speakVoiceResponse('ESP32 camera is not connected.');
-      return;
-    }
-
-    if (!_faceDetected) {
-      await _speakVoiceResponse('No face is currently detected.');
-      return;
-    }
-
-    final int alertness = (_alertnessScore * 100).round();
-
-    if (_faceFatigueDetected) {
-      await _speakVoiceResponse(
-        'Fatigue detected. $_fatigueReason. '
-        'Alertness is $alertness percent.',
-      );
-      return;
-    }
-
-    await _speakVoiceResponse(
-      'Driver status is normal. Alertness is $alertness percent.',
-    );
-  }
-
-  Future<void> _speakVoiceResponse(String message) async {
-    if (!_voiceFeedbackEnabled || !mounted || _voiceResponseInProgress != null) {
-      return;
-    }
-    final Future<void> response = _playVoiceResponse(message);
-    _voiceResponseInProgress = response;
-    try {
-      await response;
-    } finally {
-      _voiceResponseInProgress = null;
-    }
-  }
-
-  Future<void> _playVoiceResponse(String message) async {
-    await _voiceCommandService.stop();
-    if (!mounted) return;
-    try {
-      await _voiceFeedback.stop();
-      await _voiceFeedback.speak(message);
-    } finally {
-      if (mounted) await _voiceCommandService.start();
-    }
   }
 
   @override
   void dispose() {
     profileData.removeListener(_onProfileChanged);
     _timer?.cancel();
-    _testNotificationTimer?.cancel();
     _detectionSubscription?.cancel();
     _connectionSubscription?.cancel();
     _faceMetricsSubscription?.cancel();
-    _voiceCommandSubscription?.cancel();
-    _voiceListeningSubscription?.cancel();
     _esp32Service.dispose();
     unawaited(_faceAnalysisService.dispose());
-    unawaited(_voiceCommandService.dispose());
-    unawaited(_voiceFeedback.stop());
     unawaited(StorageService.instance.endDrivingSession());
 
     super.dispose();
@@ -368,30 +196,6 @@ class _DrivingIngPageState extends State<DrivingIngPage>
     );
   }
 
-  void _setDetectionMode(bool useMockData) {
-    if (_useMockData == useMockData) return;
-
-    setState(() {
-      _useMockData = useMockData;
-      _esp32Connected = false;
-      _currentLabel = 'waiting';
-      _currentConfidence = 0.0;
-      _consecutiveDistractedDetections = 0;
-    });
-
-    _esp32Service.start(mockMode: _useMockData);
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          _useMockData
-              ? 'Demo mode enabled'
-              : 'Real ESP32 mode enabled. Connect to FatigueGuard-ESP32 Wi-Fi.',
-        ),
-      ),
-    );
-  }
-
   double get _alertnessScore {
     if (_faceDetected) {
       return _faceAlertness;
@@ -427,28 +231,6 @@ class _DrivingIngPageState extends State<DrivingIngPage>
     _fatigueEpisodeActive = true;
     _fatigueAlertLevel = (_fatigueAlertLevel % 3) + 1;
 
-    if (_testingMode) {
-      _lastAlertClosedAt = now;
-      await StorageService.instance.saveDetectionEvent(
-        label: 'drowsy',
-        confidence: (1.0 - metrics.alertness).clamp(0.0, 1.0),
-        alertLevel: _fatigueAlertLevel,
-      );
-
-      if (mounted) {
-        final bool isYawn = metrics.fatigueReason.toLowerCase().contains(
-          'yawn',
-        );
-        _showTestNotification(
-          isYawn
-              ? 'YAWNING DETECTED: ${metrics.fatigueReason}'
-              : 'FATIGUE DETECTED: ${metrics.fatigueReason}',
-          errorColor,
-        );
-      }
-      return;
-    }
-
     final Widget alertPage = switch (_fatigueAlertLevel) {
       1 => const FatigueLevel1Page(),
       2 => const FatigueLevel2Page(),
@@ -480,15 +262,57 @@ class _DrivingIngPageState extends State<DrivingIngPage>
     if (result.label != 'distracted') {
       _distractedEpisodeActive = false;
     }
+    if (result.label != 'drowsy') {
+      _edgeDrowsyEpisodeActive = false;
+    }
 
     if (!mounted || _isPaused || _alertPageOpen) {
       return;
+    }
+
+    if (result.label == 'drowsy' &&
+        result.confidence >= _drowsyAlertConfidence) {
+      _consecutiveDrowsyDetections++;
+    } else {
+      _consecutiveDrowsyDetections = 0;
     }
 
     final DateTime now = DateTime.now();
 
     if (_lastAlertClosedAt != null &&
         now.difference(_lastAlertClosedAt!) < _alertCooldown) {
+      return;
+    }
+
+    if (_consecutiveDrowsyDetections >=
+            _requiredConsecutiveDrowsyDetections &&
+        !_edgeDrowsyEpisodeActive &&
+        !_faceFatigueDetected) {
+      _edgeDrowsyEpisodeActive = true;
+      _consecutiveDrowsyDetections = 0;
+      _fatigueAlertLevel = (_fatigueAlertLevel % 3) + 1;
+      final Widget warning = switch (_fatigueAlertLevel) {
+        1 => const FatigueLevel1Page(),
+        2 => const FatigueLevel2Page(),
+        _ => const FatigueLevel3Page(),
+      };
+      _alertPageOpen = true;
+      try {
+        await StorageService.instance.saveDetectionEvent(
+          label: 'drowsy',
+          confidence: result.confidence,
+          alertLevel: _fatigueAlertLevel,
+        );
+        if (!mounted) return;
+        await Navigator.of(context).push<void>(
+          MaterialPageRoute<void>(builder: (_) => warning),
+        );
+      } finally {
+        if (mounted) {
+          _alertPageOpen = false;
+          _lastAlertClosedAt = DateTime.now();
+        }
+      }
       return;
     }
 
@@ -516,23 +340,6 @@ class _DrivingIngPageState extends State<DrivingIngPage>
     const String alertLabel = 'distracted';
 
     _consecutiveDistractedDetections = 0;
-
-    if (_testingMode) {
-      _lastAlertClosedAt = now;
-      await StorageService.instance.saveDetectionEvent(
-        label: alertLabel,
-        confidence: result.confidence,
-        alertLevel: 1,
-      );
-
-      if (mounted) {
-        _showTestNotification(
-          'DISTRACTION DETECTED: ${(result.confidence * 100).round()}%',
-          Colors.deepOrange,
-        );
-      }
-      return;
-    }
 
     Widget? alertPage;
 
@@ -593,23 +400,6 @@ class _DrivingIngPageState extends State<DrivingIngPage>
     }
   }
 
-  void _showTestNotification(String message, Color color) {
-    _testNotificationTimer?.cancel();
-
-    setState(() {
-      _testEventCount++;
-      _testNotification = message;
-      _testNotificationColor = color;
-    });
-
-    _testNotificationTimer = Timer(const Duration(seconds: 3), () {
-      if (!mounted) return;
-      setState(() {
-        _testNotification = null;
-      });
-    });
-  }
-
   Future<void> _endSessionAndOpen(Widget page) async {
     await StorageService.instance.endDrivingSession();
 
@@ -626,9 +416,9 @@ class _DrivingIngPageState extends State<DrivingIngPage>
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Driving Alert Demo Mode'),
+          title: const Text('Show alert screen manually'),
           content: const Text(
-            'Select an alert level to showcase to your lecturer:',
+            'Manual preview only. Automatic alerts use real ESP32 results:',
           ),
           actions: [
             TextButton(
@@ -741,43 +531,9 @@ class _DrivingIngPageState extends State<DrivingIngPage>
           ),
         ),
         actions: [
-          Icon(
-            _voiceListening ? Icons.mic : Icons.mic_off,
-            color: _voiceListening ? Colors.green : onSurfaceVariant,
-            size: 22,
-          ),
-          const SizedBox(width: 6),
-          PopupMenuButton<bool>(
-            tooltip: 'Detection mode',
-            icon: Icon(
-              _useMockData ? Icons.science_outlined : Icons.wifi_tethering,
-              color: _useMockData ? Colors.amber : primaryColor,
-            ),
-            onSelected: _setDetectionMode,
-            itemBuilder: (context) => const [
-              PopupMenuItem<bool>(
-                value: false,
-                child: ListTile(
-                  leading: Icon(Icons.wifi_tethering),
-                  title: Text('Real ESP32'),
-                  subtitle: Text('192.168.4.1'),
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-              PopupMenuItem<bool>(
-                value: true,
-                child: ListTile(
-                  leading: Icon(Icons.science_outlined),
-                  title: Text('Demo mode'),
-                  subtitle: Text('Simulated results'),
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ),
-            ],
-          ),
           IconButton(
             icon: const Icon(Icons.bug_report, color: Colors.amber, size: 26),
-            tooltip: 'Demo Alert Triggers',
+            tooltip: 'Manually show alert screens',
             onPressed: () => _showDrivingDemoDialog(context),
           ),
           const SizedBox(width: 4),
@@ -815,78 +571,6 @@ class _DrivingIngPageState extends State<DrivingIngPage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE8EAF6),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: primaryColor),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.science, color: primaryColor),
-                      const SizedBox(width: 10),
-                      const Expanded(
-                        child: Text(
-                          'TESTING MODE · Warning pages disabled',
-                          style: TextStyle(
-                            fontFamily: 'Manrope',
-                            fontWeight: FontWeight.bold,
-                            color: primaryColor,
-                          ),
-                        ),
-                      ),
-                      Text(
-                        'Events $_testEventCount',
-                        style: const TextStyle(
-                          fontFamily: 'JetBrains Mono',
-                          fontSize: 11,
-                          color: primaryColor,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 10),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 250),
-                  child: _testNotification == null
-                      ? const SizedBox.shrink()
-                      : Container(
-                          key: ValueKey<String>(_testNotification!),
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: _testNotificationColor.withValues(
-                              alpha: 0.12,
-                            ),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: _testNotificationColor),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.notifications_active,
-                                color: _testNotificationColor,
-                              ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  _testNotification!,
-                                  style: TextStyle(
-                                    fontFamily: 'Manrope',
-                                    fontWeight: FontWeight.bold,
-                                    color: _testNotificationColor,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                ),
-                if (_testNotification != null) const SizedBox(height: 10),
                 Center(
                   child: Column(
                     children: [
@@ -920,7 +604,7 @@ class _DrivingIngPageState extends State<DrivingIngPage>
                               _isPaused
                                   ? 'SESSION PAUSED'
                                   : _esp32Connected
-                                  ? '${_useMockData ? 'DEMO' : 'ESP32'}: '
+                                  ? 'ESP32: '
                                         '${_currentLabel.toUpperCase()} '
                                         '${(_currentConfidence * 100).toStringAsFixed(0)}%'
                                   : 'ESP32 DISCONNECTED',

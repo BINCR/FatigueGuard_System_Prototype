@@ -36,25 +36,13 @@ class Esp32Service {
   Timer? _pollingTimer;
   bool _requestInProgress = false;
   bool? _lastConnectionState;
-  int _mockIndex = 0;
 
   Stream<DetectionResult> get results => _resultController.stream;
 
   Stream<bool> get connectionStatus => _connectionController.stream;
 
-  void start({bool mockMode = false}) {
+  void start() {
     stop();
-
-    if (mockMode) {
-      _setConnected(true);
-      _emitMockResult();
-
-      _pollingTimer = Timer.periodic(
-        const Duration(seconds: 5),
-        (_) => _emitMockResult(),
-      );
-      return;
-    }
 
     _readStatus();
 
@@ -92,18 +80,6 @@ class Esp32Service {
     } finally {
       _requestInProgress = false;
     }
-  }
-
-  void _emitMockResult() {
-    const mockResults = <DetectionResult>[
-      DetectionResult(label: 'normal', confidence: 0.97),
-      DetectionResult(label: 'drowsy', confidence: 0.91),
-      DetectionResult(label: 'distracted', confidence: 0.93),
-      DetectionResult(label: 'uncertain', confidence: 0.55),
-    ];
-
-    _resultController.add(mockResults[_mockIndex]);
-    _mockIndex = (_mockIndex + 1) % mockResults.length;
   }
 
   void _setConnected(bool connected) {

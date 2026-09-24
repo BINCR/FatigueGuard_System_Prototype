@@ -1,7 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <application
         android:label="fatigue_guard"
@@ -36,10 +35,6 @@
     </application>
 
     <queries>
-        <intent>
-            <action android:name="android.speech.RecognitionService" />
-        </intent>
-
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT" />
             <data android:mimeType="text/plain" />
