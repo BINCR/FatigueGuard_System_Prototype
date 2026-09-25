@@ -56,6 +56,9 @@ class _DrivingIngPageState extends State<DrivingIngPage>
   bool _fatigueEpisodeActive = false;
   bool _edgeDrowsyEpisodeActive = false;
   bool _distractedEpisodeActive = false;
+  DateTime? _headTurnStartedAt;
+  DateTime? _lastHeadTurnAt;
+  bool _headTurnAlertShown = false;
 
 
   int _consecutiveDistractedDetections = 0;
@@ -67,6 +70,8 @@ class _DrivingIngPageState extends State<DrivingIngPage>
   static const double _drowsyAlertConfidence = 0.80;
   static const int _requiredConsecutiveDrowsyDetections = 3;
   static const Duration _alertCooldown = Duration(seconds: 8);
+  static const Duration _headTurnAlertDelay = Duration(seconds: 2);
+  static const Duration _headPoseGrace = Duration(milliseconds: 1200);
 
   static const Color primaryColor = Color(0xFF3525CD);
   static const Color primaryContainer = Color(0xFF4F46E5);
@@ -135,6 +140,7 @@ class _DrivingIngPageState extends State<DrivingIngPage>
         _headPosition = metrics.headPosition;
       });
 
+      unawaited(_handleHeadTurn(metrics));
       unawaited(_handleFaceMetrics(metrics));
     });
 
@@ -187,6 +193,9 @@ class _DrivingIngPageState extends State<DrivingIngPage>
     setState(() {
       _isPaused = !_isPaused;
     });
+    _headTurnStartedAt = null;
+    _lastHeadTurnAt = null;
+    _headTurnAlertShown = false;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -209,6 +218,63 @@ class _DrivingIngPageState extends State<DrivingIngPage>
         return (1.0 - _currentConfidence).clamp(0.0, 1.0).toDouble();
       default:
         return 0.0;
+    }
+  }
+
+  Future<void> _handleHeadTurn(FaceMetrics metrics) async {
+    if (!mounted || _isPaused || !metrics.faceDetected) {
+      _headTurnStartedAt = null;
+      _lastHeadTurnAt = null;
+      _headTurnAlertShown = false;
+      return;
+    }
+
+    // The face service compares head pose with its calibrated forward pose.
+    final bool turned =
+        metrics.headPosition == 'Left' || metrics.headPosition == 'Right';
+    final DateTime now = DateTime.now();
+    if (!turned) {
+      // A brief Stable frame between two turned frames should not restart
+      // the timer. Require a full grace period of forward-facing frames.
+      if (_lastHeadTurnAt == null ||
+          now.difference(_lastHeadTurnAt!) > _headPoseGrace) {
+        _headTurnStartedAt = null;
+        _lastHeadTurnAt = null;
+        _headTurnAlertShown = false;
+      }
+      return;
+    }
+
+    _lastHeadTurnAt = now;
+    _headTurnStartedAt ??= now;
+    if (_headTurnAlertShown ||
+        now.difference(_headTurnStartedAt!) < _headTurnAlertDelay ||
+        _alertPageOpen ||
+        (_lastAlertClosedAt != null &&
+            now.difference(_lastAlertClosedAt!) < _alertCooldown)) {
+      return;
+    }
+
+    _headTurnAlertShown = true;
+    _alertPageOpen = true;
+    try {
+      await StorageService.instance.saveDetectionEvent(
+        label: 'distracted',
+        // Head pose is a rule-based signal; it has no model confidence.
+        confidence: 0.0,
+        alertLevel: 1,
+      );
+      if (!mounted) return;
+      await Navigator.of(context).push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => const DistractionAlertPage(),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        _alertPageOpen = false;
+        _lastAlertClosedAt = DateTime.now();
+      }
     }
   }
 
