@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 class CollisionDetectPage extends StatefulWidget {
   const CollisionDetectPage({super.key});
@@ -10,6 +12,7 @@ class CollisionDetectPage extends StatefulWidget {
 }
 
 class _CollisionDetectPageState extends State<CollisionDetectPage> {
+  static const LatLng _demoLocation = LatLng(1.4927, 103.7414);
   final FlutterTts _flutterTts = FlutterTts();
   int _countdown = 7;
   Timer? _timer;
@@ -212,8 +215,51 @@ class _CollisionDetectPageState extends State<CollisionDetectPage> {
                               const SizedBox(height: 12),
                               _buildEmergencyItem(
                                 icon: Icons.location_on,
-                                title: 'Location: Real-Time GPS',
-                                subtitle: 'Current: 1.4927° N, 103.7414° E',
+                                title: 'Demo Location',
+                                subtitle: '1.4927° N, 103.7414° E (fixed)',
+                              ),
+                              const SizedBox(height: 12),
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: SizedBox(
+                                  height: 190,
+                                  width: double.infinity,
+                                  child: FlutterMap(
+                                    options: const MapOptions(
+                                      initialCenter: _demoLocation,
+                                      initialZoom: 15,
+                                    ),
+                                    children: [
+                                      TileLayer(
+                                        urlTemplate:
+                                            'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                                        userAgentPackageName:
+                                            'com.example.fatigue_guard',
+                                      ),
+                                      const MarkerLayer(
+                                        markers: [
+                                          Marker(
+                                            point: _demoLocation,
+                                            width: 48,
+                                            height: 48,
+                                            child: Icon(
+                                              Icons.location_pin,
+                                              color: Colors.red,
+                                              size: 42,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const RichAttributionWidget(
+                                        attributions: [
+                                          TextSourceAttribution(
+                                            'OpenStreetMap contributors',
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               ),
                             ],
                           ),
