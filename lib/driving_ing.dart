@@ -28,6 +28,7 @@ class _DrivingIngPageState extends State<DrivingIngPage>
     with SingleTickerProviderStateMixin {
   int _seconds = 0;
   Timer? _timer;
+  Timer? _headTurnCheckTimer;
   bool _isPaused = false;
 
   final Esp32Service _esp32Service = Esp32Service();
@@ -140,12 +141,16 @@ class _DrivingIngPageState extends State<DrivingIngPage>
         _headPosition = metrics.headPosition;
       });
 
-      unawaited(_handleHeadTurn(metrics));
+      _handleHeadTurn(metrics);
       unawaited(_handleFaceMetrics(metrics));
     });
 
     _esp32Service.start();
     unawaited(_faceAnalysisService.start());
+    _headTurnCheckTimer = Timer.periodic(
+      const Duration(milliseconds: 250),
+      (_) => unawaited(_maybeShowHeadTurnAlert()),
+    );
 
   }
 
@@ -153,6 +158,7 @@ class _DrivingIngPageState extends State<DrivingIngPage>
   void dispose() {
     profileData.removeListener(_onProfileChanged);
     _timer?.cancel();
+    _headTurnCheckTimer?.cancel();
     _detectionSubscription?.cancel();
     _connectionSubscription?.cancel();
     _faceMetricsSubscription?.cancel();
@@ -221,7 +227,7 @@ class _DrivingIngPageState extends State<DrivingIngPage>
     }
   }
 
-  Future<void> _handleHeadTurn(FaceMetrics metrics) async {
+  void _handleHeadTurn(FaceMetrics metrics) {
     if (!mounted || _isPaused || !metrics.faceDetected) {
       _headTurnStartedAt = null;
       _lastHeadTurnAt = null;
@@ -247,6 +253,19 @@ class _DrivingIngPageState extends State<DrivingIngPage>
 
     _lastHeadTurnAt = now;
     _headTurnStartedAt ??= now;
+  }
+
+  Future<void> _maybeShowHeadTurnAlert() async {
+    final DateTime now = DateTime.now();
+    if (!mounted ||
+        _isPaused ||
+        !_faceDetected ||
+        (_headPosition != 'Left' && _headPosition != 'Right') ||
+        _lastHeadTurnAt == null ||
+        now.difference(_lastHeadTurnAt!) > _headPoseGrace ||
+        _headTurnStartedAt == null) {
+      return;
+    }
     if (_headTurnAlertShown ||
         now.difference(_headTurnStartedAt!) < _headTurnAlertDelay ||
         _alertPageOpen ||
@@ -258,18 +277,21 @@ class _DrivingIngPageState extends State<DrivingIngPage>
     _headTurnAlertShown = true;
     _alertPageOpen = true;
     try {
-      await StorageService.instance.saveDetectionEvent(
-        label: 'distracted',
-        // Head pose is a rule-based signal; it has no model confidence.
-        confidence: 0.0,
-        alertLevel: 1,
-      );
-      if (!mounted) return;
       await Navigator.of(context).push<void>(
         MaterialPageRoute<void>(
           builder: (_) => const DistractionAlertPage(),
         ),
       );
+      try {
+        await StorageService.instance.saveDetectionEvent(
+          label: 'distracted',
+          // Head pose is a rule-based signal; it has no model confidence.
+          confidence: 0.0,
+          alertLevel: 1,
+        );
+      } catch (error) {
+        debugPrint('Could not save head-turn event: $error');
+      }
     } finally {
       if (mounted) {
         _alertPageOpen = false;
